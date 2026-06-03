@@ -1,0 +1,123 @@
+import '../../../../core/services/shared/api_service.dart';
+import '../../../../core/constants/api_config.dart';
+
+class EarningsService {
+  static String? _token;
+
+  static void setToken(String token) {
+    _token = token;
+  }
+
+  // GET /hotel-owner/earnings
+  static Future<Map<String, dynamic>> getEarnings({Map<String, String>? filters}) async {
+    // Try the dedicated summary endpoint first, fall back to general earnings
+    try {
+      final params = filters ?? {};
+      final response = await ApiService.get(
+        ApiConfig.ownerEarningsSummaryEndpoint,
+        token: _token,
+        queryParams: params.isNotEmpty ? params : null,
+      );
+      if (response['success'] == true) return response['data'] ?? {};
+    } catch (_) {}
+    // Fallback to existing endpoint
+    final response =
+        await ApiService.get(ApiConfig.ownerEarningsEndpoint, token: _token, queryParams: filters);
+    if (response['success'] == true) return response['data'] ?? {};
+    throw Exception(response['message'] ?? 'Failed to fetch earnings');
+  }
+
+  // GET /hotel-owner/earnings/export
+  static Future<Map<String, dynamic>> exportEarnings({Map<String, String>? filters}) async {
+    final response = await ApiService.get(ApiConfig.ownerEarningsExportEndpoint,
+        token: _token, queryParams: filters);
+    if (response['success'] == true) return response['data'] ?? {};
+    throw Exception(response['message'] ?? 'Failed to export earnings');
+  }
+
+  // GET /hotel-owner/transactions
+  static Future<List<Map<String, dynamic>>> fetchTransactions(
+      {Map<String, String>? filters}) async {
+    final response = await ApiService.get(ApiConfig.ownerTransactionsEndpoint,
+        token: _token, queryParams: filters);
+    if (response['success'] == true) {
+      return List<Map<String, dynamic>>.from(response['data'] ?? []);
+    }
+    throw Exception(response['message'] ?? 'Failed to fetch transactions');
+  }
+
+  // GET /hotel-owner/transactions/filter
+  static Future<List<Map<String, dynamic>>> filterTransactionsList({
+    String? startDate,
+    String? endDate,
+    String? type,
+    String? status,
+  }) async {
+    final queryParams = <String, String>{};
+    if (startDate != null) queryParams['startDate'] = startDate;
+    if (endDate != null) queryParams['endDate'] = endDate;
+    if (type != null) queryParams['type'] = type;
+    if (status != null) queryParams['status'] = status;
+    final response = await ApiService.get(ApiConfig.ownerTransactionsFilterEndpoint,
+        token: _token, queryParams: queryParams);
+    if (response['success'] == true) {
+      return List<Map<String, dynamic>>.from(response['data'] ?? []);
+    }
+    throw Exception(response['message'] ?? 'Failed to filter transactions');
+  }
+
+  // GET /hotel-owner/withdrawals
+  static Future<List<Map<String, dynamic>>> fetchWithdrawals() async {
+    final response = await ApiService.get(ApiConfig.ownerWithdrawalsEndpoint, token: _token);
+    if (response['success'] == true) {
+      return List<Map<String, dynamic>>.from(response['data'] ?? []);
+    }
+    throw Exception(response['message'] ?? 'Failed to fetch withdrawals');
+  }
+
+  // POST /hotel-owner/withdrawals
+  static Future<Map<String, dynamic>> createWithdrawal(Map<String, dynamic> data) async {
+    final response =
+        await ApiService.post(ApiConfig.ownerWithdrawalsEndpoint, token: _token, data: data);
+    if (response['success'] == true) return response['data'] ?? {};
+    throw Exception(response['message'] ?? 'Failed to request withdrawal');
+  }
+
+  // ── Instance wrappers (EarningsProvider uses _earningsService.method()) ──
+
+  Future<List<Map<String, dynamic>>> getEarningsData(String period) async {
+    final data = await EarningsService.getEarnings(filters: {'period': period});
+    if (data is List) return List<Map<String, dynamic>>.from(data as Iterable);
+    return [data];
+  }
+
+  Future<List<Map<String, dynamic>>> getTransactions(String period) =>
+      EarningsService.fetchTransactions(filters: {'period': period});
+
+  Future<List<Map<String, dynamic>>> getWithdrawals(String period) =>
+      EarningsService.fetchWithdrawals();
+
+  Future<Map<String, dynamic>> requestWithdrawal(double amount, String bankAccountId) =>
+      EarningsService.createWithdrawal({'amount': amount, 'bankAccountId': bankAccountId});
+
+  Future<void> exportEarningsReport(String period, String format) =>
+      EarningsService.exportEarnings(filters: {'period': period, 'format': format});
+
+  Future<Map<String, dynamic>> getTransactionHistory() async {
+    final list = await EarningsService.fetchTransactions();
+    return {'data': list};
+  }
+
+  Future<Map<String, dynamic>> filterTransactions({
+    String? type,
+    String? status,
+    String? startDate,
+    String? endDate,
+  }) async {
+    final list = await EarningsService.filterTransactionsList(
+      type: type, status: status, startDate: startDate, endDate: endDate,
+    );
+    return {'data': list};
+  }
+}
+

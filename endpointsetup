@@ -1,0 +1,2837 @@
+# HotelSewa — API Documentation (Guest & Owner)
+
+> **Base URL:** `http://209.50.241.46:2000/api`
+> **Auth:** Include `Authorization: Bearer {token}` on all 🔒 routes.
+> **Content-Type:** `application/json` — use `multipart/form-data` for file uploads (📎)
+
+---
+
+## Legend
+
+| Symbol | Meaning |
+|--------|---------|
+| 🔒 | Requires Bearer token |
+| 🌐 | Public — no auth needed |
+| 📎 | File upload — use `multipart/form-data` |
+| 👤 | Guest role |
+| 🏨 | Owner role |
+
+---
+
+## Table of Contents
+
+1. [Authentication](#1-authentication)
+2. [User Profile](#2-user-profile)
+3. [Hotels — Browse & Search](#3-hotels--browse--search)
+4. [Hotel Management (Owner)](#4-hotel-management-owner)
+5. [Room Types](#5-room-types)
+6. [Rooms](#6-rooms)
+7. [Bookings (Guest)](#7-bookings-guest)
+8. [Booking Management (Owner)](#8-booking-management-owner)
+9. [Payments](#9-payments)
+10. [Nepal Payments — Khalti & eSewa](#10-nepal-payments--khalti--esewa)
+11. [Coupons & Deals](#11-coupons--deals)
+12. [Hotel Ratings & Reviews](#12-hotel-ratings--reviews)
+13. [Hotel Media / Gallery / Video (Owner)](#13-hotel-media--gallery--video-owner)
+14. [Room Type Media (Owner)](#14-room-type-media-owner)
+15. [Hotel Owner Dashboard](#15-hotel-owner-dashboard)
+16. [Earnings & Withdrawals (Owner)](#16-earnings--withdrawals-owner)
+17. [Offers Management (Owner)](#17-offers-management-owner)
+18. [In-Stay Ordering](#18-in-stay-ordering)
+19. [QR Check-in System](#19-qr-check-in-system)
+20. [Loyalty Points](#20-loyalty-points)
+21. [Loyalty Tiers](#21-loyalty-tiers)
+22. [Waitlist](#22-waitlist)
+23. [Booking Requests & Modifications](#23-booking-requests--modifications)
+24. [Guest-Hotel Chat](#24-guest-hotel-chat)
+25. [Price Alerts (Guest)](#25-price-alerts-guest)
+26. [Support System](#26-support-system)
+27. [AI Chatbot](#27-ai-chatbot)
+28. [AI / Dynamic Pricing (Owner)](#28-ai--dynamic-pricing-owner)
+29. [iCal / Channel Manager (Owner)](#29-ical--channel-manager-owner)
+30. [Automated Guest Messaging (Owner)](#30-automated-guest-messaging-owner)
+31. [Competitor Benchmarking (Owner)](#31-competitor-benchmarking-owner)
+32. [Multi-Currency](#32-multi-currency)
+33. [Tax Reporting (Owner)](#33-tax-reporting-owner)
+34. [Two-Factor Authentication (2FA)](#34-two-factor-authentication-2fa)
+35. [Video / Virtual Tours](#35-video--virtual-tours)
+36. [Review Requests (Owner)](#36-review-requests-owner)
+37. [Recommendations](#37-recommendations)
+38. [Filters & Search](#38-filters--search)
+39. [Invoice](#39-invoice)
+40. [Blackout Dates (Owner)](#40-blackout-dates-owner)
+41. [Hotel Comparison](#41-hotel-comparison)
+42. [Guest ID Verification](#42-guest-id-verification)
+43. [Long-Stay / Monthly Rates](#43-long-stay--monthly-rates)
+44. [PMS Integration (Owner)](#44-pms-integration-owner)
+45. [Split Payment](#45-split-payment)
+46. [Housekeeping (Owner)](#46-housekeeping-owner)
+47. [Maintenance (Owner)](#47-maintenance-owner)
+48. [Hotel Staff Management (Owner)](#48-hotel-staff-management-owner)
+49. [Digital Room Key](#49-digital-room-key)
+50. [Front Desk (Owner)](#50-front-desk-owner)
+51. [Hotel Stay Packages](#51-hotel-stay-packages)
+52. [Upselling & Add-ons](#52-upselling--add-ons)
+53. [Activities & Experiences](#53-activities--experiences)
+54. [Corporate / Business Travel (Guest)](#54-corporate--business-travel-guest)
+55. [Group Bookings](#55-group-bookings)
+56. [Flash Sales](#56-flash-sales)
+57. [Membership / Subscription](#57-membership--subscription)
+58. [Digital Concierge](#58-digital-concierge)
+59. [Pre-Arrival Guest Profile](#59-pre-arrival-guest-profile)
+60. [Post-Stay Engagement (Owner)](#60-post-stay-engagement-owner)
+61. [Revenue Management Dashboard (Owner)](#61-revenue-management-dashboard-owner)
+62. [Multi-Property Management (Owner)](#62-multi-property-management-owner)
+63. [Event / Banquet Hall](#63-event--banquet-hall)
+64. [Inventory / Stock Management (Owner)](#64-inventory--stock-management-owner)
+65. [Mid-Stay Feedback](#65-mid-stay-feedback)
+66. [Reputation Management (Owner)](#66-reputation-management-owner)
+67. [Travel Insurance](#67-travel-insurance)
+68. [Affiliate / Referral Partner](#68-affiliate--referral-partner)
+69. [Smart Room Controls](#69-smart-room-controls)
+70. [Sustainability / Eco](#70-sustainability--eco)
+71. [App Screen APIs](#71-app-screen-apis)
+72. [Notifications](#72-notifications)
+73. [NLP Search](#73-nlp-search)
+
+---
+
+---
+
+## 1. Authentication
+
+### 🌐 POST `/user-signup`
+Register or login via social / phone / email.
+
+**Body (`multipart/form-data`):**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `type` | string | ✅ | `email` `google` `phone` `apple` |
+| `firebase_id` | string | ✅ | Firebase UID |
+| `email` | string | — | Required for `email` / `google` |
+| `mobile` | string | — | Required for `phone` |
+| `country_code` | string | — | e.g. `+977` |
+| `name` | string | — | Display name |
+| `profile` | file | — | jpg/png max 7 MB |
+| `fcm_id` | string | — | Push notification token |
+| `platform_type` | string | — | `android` or `ios` |
+| `registration` | boolean | — | `true` = skip token creation |
+
+**Response:** user object + `token`
+
+---
+
+### 🌐 GET `/get-otp`
+Send OTP to a phone number.
+
+**Query params:** `mobile`, `country_code`
+
+---
+
+### 🌐 GET `/verify-otp`
+Verify OTP.
+
+**Query params:** `mobile`, `otp`
+
+---
+
+### 🌐 POST `/forgot-password`
+Send a password-reset link.
+
+**Body:** `{ "email": "user@example.com" }`
+
+---
+
+### 🌐 POST `/reset-password`
+Reset password using the emailed token.
+
+**Body:** `{ "token": "...", "email": "...", "password": "...", "password_confirmation": "..." }`
+
+---
+
+### 🔒 POST `/logout`
+Invalidate the current Bearer token.
+
+---
+
+### 🔒 POST `/switch-role`
+Switch between guest / owner roles.
+
+**Body:** `{ "role": "owner" }`
+
+---
+
+## 2. User Profile
+
+### 🔒 📎 POST `/update-profile`
+Update the authenticated user's profile.
+
+**Body (`multipart/form-data`):**
+| Field | Type | Notes |
+|-------|------|-------|
+| `name` | string | Display name |
+| `profile` | file | jpg/png max 7 MB |
+| `email` | string | Not editable for Google users |
+| `mobile` | string | |
+| `fcm_id` | string | Push token |
+| `address` | string | |
+| `show_personal_details` | boolean | Show contact info publicly |
+| `country_code` | string | e.g. `+977` |
+
+---
+
+### 🔒 DELETE `/delete-user`
+Permanently delete the authenticated account.
+
+---
+
+### 🔒 GET `/profile/stats`
+👤 Trip count, reviews written, saved hotels, loyalty points.
+
+---
+
+### 🔒 GET `/profile/travel-preferences`
+👤 Get saved travel preferences.
+
+---
+
+### 🔒 PUT `/profile/travel-preferences`
+👤 Save travel preferences.
+
+**Body:** `{ "preferences": { "room_type": "deluxe", "floor": "high", "pillow": "soft" } }`
+
+---
+
+### 🔒 GET `/profile/addresses`
+👤 List saved addresses.
+
+---
+
+### 🔒 POST `/profile/addresses`
+👤 Save a new address.
+
+**Body:** `{ "label": "Home", "address": "...", "city": "...", "country": "..." }`
+
+---
+
+### 🔒 DELETE `/profile/addresses/{id}`
+👤 Delete a saved address.
+
+---
+
+### 🔒 GET `/profile/linked-accounts`
+List linked social accounts.
+
+---
+
+### 🔒 POST `/profile/link-social`
+Link a social account.
+
+**Body:** `{ "provider": "google", "token": "..." }`
+
+---
+
+### 🔒 DELETE `/profile/linked-accounts/{provider}`
+Unlink a social account. `provider` = `google`, `apple`, etc.
+
+---
+
+### 🔒 GET `/notification-preferences`
+Get notification preferences.
+
+---
+
+### 🔒 PUT `/notification-preferences`
+Update notification preferences.
+
+**Body:** `{ "email": true, "push": true, "sms": false }`
+
+---
+
+### 🔒 GET `/payment-methods`
+List saved payment methods.
+
+---
+
+### 🔒 POST `/payment-methods`
+Save a new payment method.
+
+**Body:** `{ "type": "card", "token": "stripe_token", "is_default": true }`
+
+---
+
+### 🔒 DELETE `/payment-methods/{id}`
+Delete a saved payment method.
+
+---
+
+### 🔒 GET `/wallet`
+👤 Wallet balance and transaction history.
+
+---
+
+---
+
+## 3. Hotels — Browse & Search
+
+### 🌐 GET `/hotels`
+List all active hotels with optional filters.
+
+**Query params:**
+| Param | Description |
+|-------|-------------|
+| `city` | Filter by city |
+| `check_in` | `YYYY-MM-DD` |
+| `check_out` | `YYYY-MM-DD` |
+| `guests` | Number of guests |
+| `min_price` | Min price per night |
+| `max_price` | Max price per night |
+| `amenities` | Comma-separated amenity IDs |
+| `rating` | Minimum star rating (1–5) |
+| `limit` | Results per page (default 15) |
+| `offset` | Pagination offset |
+
+---
+
+### 🌐 GET `/hotel-details/{id}`
+Full hotel details — room types, amenities, gallery, policies.
+
+---
+
+### 🌐 GET `/hotel-policies/{id}`
+Cancellation, check-in/out, and other policies.
+
+---
+
+### 🌐 GET `/hotels/nearby`
+Search hotels by GPS location.
+
+**Query params:** `latitude`, `longitude`, `radius` (km), `limit`
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/gallery`
+All gallery images and videos for a hotel.
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/videos`
+Virtual tour videos for a hotel.
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/blackout-dates`
+Dates when the hotel is unavailable.
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/packages`
+Available stay packages for a hotel.
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/addons`
+Available add-ons (spa, breakfast, airport transfer, etc.).
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/activities`
+Activities and experiences offered by a hotel.
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/event-spaces`
+Event / banquet spaces at a hotel.
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/long-stay-rates`
+Monthly / long-stay discount rates.
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/eco-info`
+Sustainability and eco-friendly information.
+
+---
+
+### 🌐 GET `/hotels/{hotelId}/menu`
+Restaurant / room-service menu (public).
+
+---
+
+### 🌐 GET `/hotels/compare`
+Compare multiple hotels side by side.
+
+**Query params:** `ids` — comma-separated hotel IDs, e.g. `ids=1,2,3`
+
+---
+
+### 🌐 GET `/room-types/{roomTypeId}/gallery`
+Gallery images for a specific room type.
+
+---
+
+### 🌐 GET `/room-types/{roomTypeId}/videos`
+Videos for a specific room type.
+
+---
+
+### 🌐 GET `/get-home-data`
+Home screen data — featured hotels, categories, sliders.
+
+---
+
+### 🌐 GET `/flash-sales`
+Active flash sale offers.
+
+---
+
+### 🌐 GET `/memberships`
+Available membership / subscription plans.
+
+---
+
+### 🌐 GET `/insurance/plans`
+Available travel insurance plans.
+
+---
+
+### 🌐 GET `/deals`
+Active public deals and promotions.
+
+---
+
+---
+
+## 4. Hotel Management (Owner)
+
+### 🔒 GET `/my-hotels`  *(alias: GET `/hotels/my`)*
+🏨 List all hotels owned by the authenticated user.
+
+---
+
+### 🔒 📎 POST `/store-hotel`  *(alias: POST `/hotels/register`)*
+🏨 Register a new hotel.
+
+**Body (`multipart/form-data`):**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `name` | string | ✅ | Hotel name |
+| `description` | string | ✅ | |
+| `address` | string | ✅ | Full address |
+| `city` | string | ✅ | |
+| `state` | string | — | |
+| `country` | string | ✅ | |
+| `latitude` | decimal | ✅ | GPS latitude |
+| `longitude` | decimal | ✅ | GPS longitude |
+| `star_rating` | integer | — | 1–5 |
+| `contact_number` | string | — | |
+| `email` | string | — | Contact email |
+| `image` | file | — | Cover image jpg/png |
+| `amenities` | array | — | Amenity IDs |
+| `check_in_time` | string | — | e.g. `14:00` |
+| `check_out_time` | string | — | e.g. `11:00` |
+
+---
+
+### 🔒 📎 POST `/update-hotel/{id}`  *(alias: PUT `/hotels/{id}`)*
+🏨 Update an existing hotel. Same fields as create.
+
+---
+
+### 🔒 DELETE `/delete-hotel/{id}`  *(alias: DELETE `/hotels/{id}`)*
+🏨 Delete a hotel.
+
+---
+
+### 🔒 PUT `/hotels/{id}/amenities`
+🏨 Update hotel amenities.
+
+**Body:** `{ "amenities": [1, 2, 5, 8] }`
+
+---
+
+### 🔒 POST `/hotels/{id}/view`
+👤 Record a hotel view (analytics).
+
+---
+
+### 🔒 GET `/hotels/recently-viewed`
+👤 Recently viewed hotels for the authenticated user.
+
+---
+
+---
+
+## 5. Room Types
+
+### 🔒 POST `/store-room-type`  *(alias: POST `/room-types`)*
+🏨 Create a room type for a hotel.
+
+**Body:**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `hotel_id` | integer | ✅ | Parent hotel |
+| `name` | string | ✅ | e.g. `Deluxe Double` |
+| `description` | string | — | |
+| `price` | decimal | ✅ | Base price per night |
+| `capacity` | integer | ✅ | Max guests |
+| `total_rooms` | integer | ✅ | Count of rooms of this type |
+| `amenities` | array | — | Room-specific amenity IDs |
+| `image` | file | — | Cover image |
+
+---
+
+### 🔒 POST `/update-room-type/{id}`  *(alias: PUT `/room-types/{id}`)*
+🏨 Update a room type. Same fields as create.
+
+---
+
+### 🔒 DELETE `/delete-room-type/{id}`  *(alias: DELETE `/room-types/{id}`)*
+🏨 Delete a room type.
+
+---
+
+## 6. Rooms
+
+### 🔒 POST `/store-room`  *(alias: POST `/rooms`)*
+🏨 Add an individual room to a room type.
+
+**Body:** `{ "room_type_id": 1, "room_number": "101", "floor": 1, "status": "available" }`
+
+---
+
+### 🔒 POST `/update-room/{id}`  *(alias: PUT `/rooms/{id}`)*
+🏨 Update a room.
+
+---
+
+### 🔒 DELETE `/delete-room/{id}`  *(alias: DELETE `/rooms/{id}`)*
+🏨 Delete a room.
+
+---
+
+## 7. Bookings (Guest)
+
+### 🔒 POST `/create-booking`
+👤 Create a new hotel booking.
+
+**Body:**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `hotel_id` | integer | ✅ | |
+| `room_type_id` | integer | ✅ | |
+| `check_in` | date | ✅ | `YYYY-MM-DD` |
+| `check_out` | date | ✅ | `YYYY-MM-DD` |
+| `guests` | integer | ✅ | Number of guests |
+| `coupon_code` | string | — | Discount coupon |
+| `payment_method` | string | ✅ | `stripe` `khalti` `esewa` `wallet` |
+| `special_requests` | string | — | Guest notes |
+| `addon_ids` | array | — | Add-on IDs to include |
+
+---
+
+### 🔒 POST `/confirm-payment`
+👤 Confirm payment after gateway callback.
+
+**Body:** `{ "booking_id": 1, "payment_intent_id": "pi_xxx" }`
+
+---
+
+### 🔒 GET `/my-bookings`
+👤 All bookings for the authenticated user.
+
+**Query params:** `status` (`upcoming` `completed` `cancelled`), `limit`, `offset`
+
+---
+
+### 🔒 POST `/cancel-booking/{id}`
+👤 Cancel a booking.
+
+**Body:** `{ "reason": "Change of plans" }`
+
+---
+
+### 🔒 GET `/preview-price`
+👤 Preview final price before confirming a booking.
+
+**Query params:** `hotel_id`, `room_type_id`, `check_in`, `check_out`, `guests`, `coupon_code`
+
+---
+
+### 🔒 GET `/bookings/{id}/refund-status`
+👤 Refund status for a cancelled booking.
+
+---
+
+### 🔒 GET `/my-pending-reviews`
+👤 Bookings awaiting a review from the user.
+
+---
+
+## 8. Booking Management (Owner)
+
+### 🔒 GET `/hotel-owner/bookings`
+🏨 All bookings for the owner's hotel.
+
+**Query params:** `status`, `date_from`, `date_to`, `limit`, `offset`
+
+---
+
+### 🔒 POST `/update-booking-status/{id}`
+🏨 Update booking status.
+
+**Body:** `{ "status": "confirmed" }` — values: `confirmed` `checked_in` `checked_out` `cancelled`
+
+---
+
+### 🔒 POST `/set-dynamic-pricing`
+🏨 Set a custom price for a room type on a specific date.
+
+**Body:** `{ "room_type_id": 1, "date": "2026-06-01", "price": 2500 }`
+
+---
+
+### 🔒 POST `/hotel-owner/bookings/manual`
+🏨 Create a manual (walk-in / phone) booking.
+
+**Body:** `{ "hotel_id": 1, "room_type_id": 2, "check_in": "2026-06-01", "check_out": "2026-06-03", "guest_name": "John Doe", "guest_mobile": "9800000000", "guests": 2 }`
+
+---
+
+---
+
+## 9. Payments
+
+### 🔒 POST `/payment-intent`
+👤 Create a Stripe payment intent.
+
+**Body:** `{ "booking_id": 1 }`
+
+**Response:** `{ "client_secret": "pi_xxx_secret_xxx" }`
+
+---
+
+### 🔒 GET `/payment-transactions`
+👤 Payment transaction history for the authenticated user.
+
+---
+
+### 🔒 POST `/bank-transfer-update`
+👤 Submit bank transfer proof for manual payment.
+
+**Body (`multipart/form-data`):** `booking_id`, `transaction_id`, `receipt` (file)
+
+---
+
+### 🔒 GET `/get-payment-settings`
+Get payment gateway configuration (Stripe keys, etc.).
+
+---
+
+## 10. Nepal Payments — Khalti & eSewa
+
+### 🔒 POST `/payment/khalti/initiate`
+👤 Initiate a Khalti payment.
+
+**Body:**
+```json
+{
+  "booking_id": 1,
+  "return_url": "https://yourapp.com/payment/callback"
+}
+```
+
+**Response:** `{ "payment_url": "https://khalti.com/...", "pidx": "..." }`
+
+---
+
+### 🔒 POST `/payment/esewa/initiate`
+👤 Initiate an eSewa payment.
+
+**Body:**
+```json
+{
+  "booking_id": 1,
+  "success_url": "https://yourapp.com/success",
+  "failure_url": "https://yourapp.com/failure"
+}
+```
+
+**Response:** eSewa form parameters for redirect.
+
+---
+
+### 🌐 GET `/payment/khalti/callback`
+Khalti gateway redirect callback — handled automatically.
+
+**Query params:** `pidx`, `status`, `transaction_id`, `booking_id`
+
+---
+
+### 🌐 GET `/payment/esewa/callback`
+eSewa success redirect — handled automatically.
+
+---
+
+### 🌐 GET `/payment/esewa/failure`
+eSewa failure redirect — handled automatically.
+
+---
+
+## 11. Coupons & Deals
+
+### 🔒 POST `/validate-coupon`
+👤 Validate a coupon code and get discount details.
+
+**Body:** `{ "code": "SAVE20", "hotel_id": 1, "booking_amount": 5000 }`
+
+**Response:** `{ "valid": true, "discount": 1000, "final_amount": 4000 }`
+
+---
+
+### 🔒 GET `/coupons/available`
+👤 All coupons available to the authenticated user.
+
+---
+
+### 🌐 GET `/deals`
+Active public deals and promotions.
+
+---
+
+## 12. Hotel Ratings & Reviews
+
+### 🔒 POST `/rate-hotel`
+👤 Submit a rating and review for a hotel.
+
+**Body:**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `hotel_id` | integer | ✅ | |
+| `booking_id` | integer | ✅ | Associated booking |
+| `rating` | integer | ✅ | 1–5 stars |
+| `review` | string | — | Written review text |
+| `cleanliness` | integer | — | Sub-rating 1–5 |
+| `service` | integer | — | Sub-rating 1–5 |
+| `location` | integer | — | Sub-rating 1–5 |
+| `value` | integer | — | Sub-rating 1–5 |
+
+---
+
+### 🔒 GET `/hotel-owner/reviews`
+🏨 All reviews for the owner's hotel.
+
+---
+
+### 🔒 POST `/hotel-owner/reviews/{id}/reply`
+🏨 Reply to a guest review.
+
+**Body:** `{ "reply": "Thank you for your feedback!" }`
+
+---
+
+---
+
+## 13. Hotel Media / Gallery / Video (Owner)
+
+### 🔒 GET `/hotel-owner/media`
+🏨 All media (images + videos) for the owner's hotel.
+
+---
+
+### 🔒 📎 POST `/hotel-owner/media/images`  *(alias: POST `/hotels/{hotelId}/gallery`)*
+🏨 Upload gallery images.
+
+**Body (`multipart/form-data`):** `images[]` — multiple jpg/png files, max 7 MB each.
+
+---
+
+### 🔒 📎 POST `/hotel-owner/media/video`
+🏨 Upload a video file.
+
+**Body (`multipart/form-data`):** `video` (mp4, max 100 MB), `title` (optional)
+
+---
+
+### 🔒 POST `/hotel-owner/media/video-link`
+🏨 Add a YouTube / Vimeo link.
+
+**Body:** `{ "url": "https://youtube.com/watch?v=xxx", "title": "Hotel Tour" }`
+
+---
+
+### 🔒 POST `/hotel-owner/media/{id}`
+🏨 Update media metadata.
+
+**Body:** `{ "title": "Lobby View", "is_primary": true }`
+
+---
+
+### 🔒 DELETE `/hotel-owner/media/{id}`
+🏨 Delete a media item.
+
+---
+
+### 🔒 POST `/hotel-owner/media/reorder`
+🏨 Reorder gallery images.
+
+**Body:** `{ "order": [3, 1, 2, 5] }` — media IDs in desired display order.
+
+---
+
+### 🔒 📎 POST `/hotel-owner/videos/upload`
+🏨 Upload a virtual tour video.
+
+**Body (`multipart/form-data`):** `video` (file), `title`, `is_primary` (boolean)
+
+---
+
+### 🔒 POST `/hotel-owner/videos/link`
+🏨 Add a virtual tour video link.
+
+**Body:** `{ "url": "https://...", "title": "...", "is_primary": false }`
+
+---
+
+### 🔒 DELETE `/hotel-owner/videos/{id}`
+🏨 Delete a hotel video.
+
+---
+
+### 🔒 POST `/hotel-owner/videos/{id}/set-primary`
+🏨 Set a video as the primary virtual tour.
+
+---
+
+## 14. Room Type Media (Owner)
+
+### 🔒 GET `/hotel-owner/room-types/media`
+🏨 All media for all room types owned by the authenticated user.
+
+---
+
+### 🔒 📎 POST `/room-types/{roomTypeId}/media/images`
+🏨 Upload images for a room type.
+
+**Body (`multipart/form-data`):** `images[]` — image files.
+
+---
+
+### 🔒 📎 POST `/room-types/{roomTypeId}/media/video`
+🏨 Upload a video for a room type.
+
+**Body (`multipart/form-data`):** `video` (file), `title`
+
+---
+
+### 🔒 POST `/room-types/{roomTypeId}/media/video-link`
+🏨 Add a video link for a room type.
+
+**Body:** `{ "url": "https://...", "title": "Room Tour" }`
+
+---
+
+### 🔒 PUT `/room-types/media/{id}`
+🏨 Update room type media metadata.
+
+**Body:** `{ "title": "...", "is_primary": true }`
+
+---
+
+### 🔒 DELETE `/room-types/media/{id}`
+🏨 Delete room type media.
+
+---
+
+### 🔒 POST `/room-types/{roomTypeId}/media/reorder`
+🏨 Reorder room type gallery images.
+
+**Body:** `{ "order": [2, 1, 3] }`
+
+---
+
+### 🔒 📎 POST `/room-types/{roomTypeId}/videos/upload`
+🏨 Upload a video to the video tours table for a room type.
+
+---
+
+### 🔒 POST `/room-types/{roomTypeId}/videos/link`
+🏨 Add a video link for a room type (video tours table).
+
+---
+
+### 🔒 DELETE `/room-types/videos/{id}`
+🏨 Delete a room type video tour entry.
+
+---
+
+### 🔒 POST `/room-types/videos/{id}/set-primary`
+🏨 Set a room type video as primary.
+
+---
+
+---
+
+## 15. Hotel Owner Dashboard
+
+### 🔒 GET `/hotel-owner/dashboard`  *(alias: GET `/dashboard`)*
+🏨 Dashboard summary — bookings, revenue, occupancy.
+
+---
+
+### 🔒 GET `/hotel-owner/amenities`
+🏨 Current amenities for the owner's hotel.
+
+---
+
+### 🔒 POST `/hotel-owner/amenities`
+🏨 Update amenities.
+
+**Body:** `{ "amenities": [1, 3, 7] }`
+
+---
+
+### 🔒 GET `/hotel-owner/gallery`
+🏨 Gallery for the owner's hotel.
+
+---
+
+### 🔒 GET `/hotel-owner/reports`  *(alias: GET `/reports`)*
+🏨 Occupancy and revenue reports.
+
+**Query params:** `period` (`week` `month` `year`), `hotel_id`
+
+---
+
+### 🔒 GET `/hotel-owner/analytics`
+🏨 Detailed analytics for the owner's hotel.
+
+---
+
+### 🔒 GET `/owner-analytics`
+🏨 Owner-level analytics summary.
+
+---
+
+### 🔒 GET `/owner/calendar`
+🏨 Yearly occupancy calendar with blocked dates.
+
+**Query params:** `hotel_id`, `year`
+
+---
+
+### 🔒 GET `/owner/tax-report`
+🏨 Revenue and tax figures for the owner's hotel.
+
+---
+
+### 🔒 GET `/owner/competitor-benchmark`
+🏨 Competitor price comparison data.
+
+---
+
+### 🔒 GET `/owner/review-requests`
+🏨 Recent checkouts awaiting review requests.
+
+---
+
+### 🔒 GET `/owner/earnings-summary`
+🏨 Earnings change % and occupancy rate.
+
+---
+
+## 16. Earnings & Withdrawals (Owner)
+
+### 🔒 GET `/hotel-owner/earnings`  *(alias: GET `/earnings`)*
+🏨 Earnings summary — total, pending, paid out.
+
+---
+
+### 🔒 GET `/hotel-owner/transactions`
+🏨 Transaction history.
+
+**Query params:** `date_from`, `date_to`, `limit`, `offset`
+
+---
+
+### 🔒 GET `/hotel-owner/transactions/filter`
+🏨 Filter transactions by date range, type, etc.
+
+---
+
+### 🔒 GET `/hotel-owner/withdrawals`
+🏨 Withdrawal history.
+
+---
+
+### 🔒 POST `/hotel-owner/withdrawals`
+🏨 Request a withdrawal.
+
+**Body:** `{ "amount": 5000, "bank_account_id": 1 }`
+
+---
+
+### 🔒 GET `/hotel-owner/earnings/export`
+🏨 Export earnings report.
+
+**Query params:** `format` (`csv` `pdf`), `date_from`, `date_to`
+
+---
+
+## 17. Offers Management (Owner)
+
+### 🔒 GET `/hotel-owner/offers`
+🏨 List all offers created by the owner.
+
+---
+
+### 🔒 POST `/hotel-owner/offers`
+🏨 Create a new offer / promotion.
+
+**Body:**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `title` | string | ✅ | Offer title |
+| `description` | string | — | |
+| `discount_type` | string | ✅ | `percentage` or `fixed` |
+| `discount_value` | decimal | ✅ | Amount or % |
+| `valid_from` | date | ✅ | `YYYY-MM-DD` |
+| `valid_to` | date | ✅ | `YYYY-MM-DD` |
+| `min_nights` | integer | — | Minimum stay |
+| `hotel_id` | integer | ✅ | |
+
+---
+
+### 🔒 POST `/hotel-owner/offers/{id}`
+🏨 Update an offer. Same fields as create.
+
+---
+
+### 🔒 DELETE `/hotel-owner/offers/{id}`
+🏨 Delete an offer.
+
+---
+
+### 🔒 GET `/hotel-owner/offers/{id}/analytics`
+🏨 Performance analytics for a specific offer.
+
+---
+
+---
+
+## 18. In-Stay Ordering
+
+### 🔒 POST `/orders/place`
+👤 Place a room-service / restaurant order.
+
+**Body:**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `hotel_id` | integer | ✅ | |
+| `booking_id` | integer | ✅ | Active booking ID |
+| `items` | array | ✅ | `[{ "menu_item_id": 1, "quantity": 2 }]` |
+| `notes` | string | — | Special instructions |
+| `delivery_location` | string | — | e.g. `Room 204` |
+
+---
+
+### 🔒 GET `/orders/my-orders`
+👤 All orders placed by the authenticated user.
+
+---
+
+### 🔒 POST `/orders/{id}/cancel`
+👤 Cancel an order (only if still pending).
+
+---
+
+### 🔒 GET `/hotel-owner/menu`
+🏨 Get the owner's menu items.
+
+---
+
+### 🔒 📎 POST `/hotel-owner/menu`
+🏨 Add a new menu item.
+
+**Body (`multipart/form-data`):**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `name` | string | ✅ | |
+| `description` | string | — | |
+| `price` | decimal | ✅ | |
+| `category` | string | — | e.g. `Breakfast` `Drinks` |
+| `image` | file | — | Item image |
+| `is_available` | boolean | — | Default `true` |
+
+---
+
+### 🔒 📎 POST `/hotel-owner/menu/{id}`
+🏨 Update a menu item. Same fields as create.
+
+---
+
+### 🔒 DELETE `/hotel-owner/menu/{id}`
+🏨 Delete a menu item.
+
+---
+
+### 🔒 GET `/hotel-owner/orders`
+🏨 All orders received by the hotel.
+
+**Query params:** `status` (`pending` `preparing` `delivered` `cancelled`), `date`
+
+---
+
+### 🔒 POST `/hotel-owner/orders/{id}/status`
+🏨 Update order status.
+
+**Body:** `{ "status": "preparing" }`
+
+---
+
+### 🔒 GET `/hotel-owner/order-analytics`
+🏨 Order analytics — revenue, popular items, peak hours.
+
+---
+
+## 19. QR Check-in System
+
+### 🔒 GET `/checkin/qr/{bookingId}`
+👤 Generate a QR code for check-in after payment is confirmed.
+
+**Response:** `{ "qr_token": "...", "qr_image_url": "..." }`
+
+---
+
+### 🌐 GET `/checkin/scan/{token}`
+Scan a QR token — returns booking details. Token acts as auth.
+
+---
+
+### 🔒 POST `/checkin/confirm`
+🏨 Confirm guest check-in after scanning QR.
+
+**Body:** `{ "qr_token": "abc123" }`
+
+---
+
+### 🔒 POST `/checkin/checkout`
+🏨 Confirm guest check-out.
+
+**Body:** `{ "booking_id": 1 }`
+
+---
+
+### 🔒 GET `/checkin/today`
+🏨 Today's expected check-ins.
+
+---
+
+### 🔒 GET `/checkin/active-guests`
+🏨 Currently checked-in guests.
+
+---
+
+---
+
+## 20. Loyalty Points
+
+### 🔒 GET `/loyalty/balance`
+👤 Get loyalty point balance and transaction history.
+
+---
+
+### 🔒 GET `/loyalty/referral-code`
+👤 Get the user's referral code.
+
+---
+
+### 🔒 POST `/loyalty/apply-referral`
+👤 Apply a referral code.
+
+**Body:** `{ "code": "REF123" }`
+
+---
+
+## 21. Loyalty Tiers
+
+### 🔒 GET `/loyalty/tiers`
+👤 List all loyalty tiers (Bronze, Silver, Gold, Platinum).
+
+---
+
+### 🔒 GET `/loyalty/my-tier`
+👤 Get the authenticated user's current tier and progress.
+
+---
+
+### 🔒 POST `/loyalty/redeem`
+👤 Redeem loyalty points against a booking.
+
+**Body:** `{ "booking_id": 1, "points": 500 }`
+
+---
+
+### 🔒 GET `/loyalty/redemption-preview`
+👤 Preview how many points can be redeemed and the discount value.
+
+**Query params:** `booking_id`, `points`
+
+---
+
+## 22. Waitlist
+
+### 🔒 POST `/waitlist/join`
+👤 Join the waitlist for a fully-booked room type.
+
+**Body:** `{ "hotel_id": 1, "room_type_id": 2, "check_in": "2026-07-01", "check_out": "2026-07-05" }`
+
+---
+
+### 🔒 GET `/waitlist/my`
+👤 All active waitlist entries for the user.
+
+---
+
+### 🔒 DELETE `/waitlist/{id}`
+👤 Leave / remove a waitlist entry.
+
+---
+
+## 23. Booking Requests & Modifications
+
+### 🔒 POST `/booking-requests/special-time`
+👤 Request early check-in or late check-out.
+
+**Body:** `{ "booking_id": 1, "type": "early_checkin", "requested_time": "10:00" }`
+
+---
+
+### 🔒 GET `/booking-requests/my`
+👤 All special-time / modification requests made by the user.
+
+---
+
+### 🔒 POST `/booking-requests/{id}/respond`
+🏨 Approve or decline a special-time request.
+
+**Body:** `{ "status": "approved", "note": "We can accommodate this." }`
+
+---
+
+### 🔒 GET `/booking-requests/owner`
+🏨 All pending requests for the owner's hotel.
+
+---
+
+### 🔒 POST `/booking-modifications/request`
+👤 Request a booking modification (dates, room type, guests).
+
+**Body:** `{ "booking_id": 1, "new_check_in": "2026-07-02", "new_check_out": "2026-07-06", "reason": "..." }`
+
+---
+
+### 🔒 POST `/booking-modifications/{id}/respond`
+🏨 Approve or decline a modification request.
+
+**Body:** `{ "status": "approved" }`
+
+---
+
+## 24. Guest-Hotel Chat
+
+### 🔒 GET `/chat/{bookingId}/messages`
+👤 🏨 Get all messages for a booking conversation.
+
+---
+
+### 🔒 POST `/chat/send`
+👤 🏨 Send a message in a booking conversation.
+
+**Body:** `{ "booking_id": 1, "message": "Can I get extra towels?" }`
+
+---
+
+### 🔒 GET `/chat/owner/all`
+🏨 All active chat conversations for the owner's hotel.
+
+---
+
+## 25. Price Alerts (Guest)
+
+### 🔒 POST `/price-alerts`
+👤 Create a price alert for a hotel / room type.
+
+**Body:** `{ "hotel_id": 1, "room_type_id": 2, "target_price": 1500, "check_in": "2026-08-01", "check_out": "2026-08-05" }`
+
+---
+
+### 🔒 GET `/price-alerts/my`
+👤 All active price alerts for the user.
+
+---
+
+### 🔒 DELETE `/price-alerts/{id}`
+👤 Delete a price alert.
+
+---
+
+---
+
+## 26. Support System
+
+### 🔒 POST `/support/tickets`
+👤 Create a new support ticket.
+
+**Body:** `{ "subject": "Booking issue", "message": "...", "booking_id": 1 }`
+
+---
+
+### 🔒 GET `/support/tickets`
+👤 List all support tickets for the user.
+
+---
+
+### 🔒 GET `/support/tickets/{id}`
+👤 Get details and messages for a specific ticket.
+
+---
+
+### 🔒 POST `/support/tickets/{id}/messages`
+👤 Add a reply message to a ticket.
+
+**Body:** `{ "message": "Still waiting for resolution." }`
+
+---
+
+### 🔒 POST `/support/chat/start`
+👤 Start a live chat support session.
+
+**Response:** `{ "token": "chat_session_token" }`
+
+---
+
+### 🔒 GET `/support/chat/{token}`
+👤 Get the current live chat session.
+
+---
+
+### 🔒 POST `/support/chat/{token}/message`
+👤 Send a message in a live chat session.
+
+**Body:** `{ "message": "I need help with my booking." }`
+
+---
+
+### 🔒 POST `/support/chat/{token}/end`
+👤 End a live chat session.
+
+---
+
+## 27. AI Chatbot
+
+### 🔒 POST `/ai-chat/start`
+👤 Start an AI chatbot session.
+
+**Response:** `{ "token": "ai_session_token" }`
+
+---
+
+### 🔒 POST `/ai-chat/message`
+👤 Send a message to the AI chatbot.
+
+**Body:** `{ "token": "ai_session_token", "message": "What rooms are available?" }`
+
+---
+
+### 🔒 GET `/ai-chat/history/{token}`
+👤 Get chat history for an AI session.
+
+---
+
+### 🔒 POST `/ai-chat/end/{token}`
+👤 End an AI chatbot session.
+
+---
+
+## 28. AI / Dynamic Pricing (Owner)
+
+### 🔒 GET `/ai-pricing/rules`
+🏨 List all AI pricing rules for the owner's hotel.
+
+---
+
+### 🔒 POST `/ai-pricing/rules`
+🏨 Create or update an AI pricing rule.
+
+**Body:** `{ "hotel_id": 1, "rule_type": "occupancy", "threshold": 80, "adjustment": 15, "adjustment_type": "percentage" }`
+
+---
+
+### 🔒 DELETE `/ai-pricing/rules/{id}`
+🏨 Delete a pricing rule.
+
+---
+
+### 🔒 GET `/ai-pricing/suggest`
+🏨 Get AI-suggested price for a specific date.
+
+**Query params:** `hotel_id`, `room_type_id`, `date`
+
+---
+
+### 🔒 GET `/ai-pricing/suggest-range`
+🏨 Get AI-suggested prices for a date range.
+
+**Query params:** `hotel_id`, `room_type_id`, `date_from`, `date_to`
+
+---
+
+### 🔒 POST `/ai-pricing/apply`
+🏨 Apply a suggested price to a specific date.
+
+**Body:** `{ "room_type_id": 1, "date": "2026-07-15", "price": 3200 }`
+
+---
+
+### 🔒 POST `/ai-pricing/auto-apply`
+🏨 Auto-apply AI pricing for a date range.
+
+**Body:** `{ "hotel_id": 1, "date_from": "2026-07-01", "date_to": "2026-07-31" }`
+
+---
+
+## 29. iCal / Channel Manager (Owner)
+
+### 🔒 GET `/ical/channels`
+🏨 List all connected iCal channels (Airbnb, Booking.com, etc.).
+
+---
+
+### 🔒 POST `/ical/channels`
+🏨 Add a new iCal channel.
+
+**Body:** `{ "name": "Airbnb", "url": "https://airbnb.com/calendar/ical/xxx.ics", "hotel_id": 1 }`
+
+---
+
+### 🔒 POST `/ical/channels/{id}/sync`
+🏨 Manually trigger a sync for a channel.
+
+---
+
+### 🔒 DELETE `/ical/channels/{id}`
+🏨 Remove an iCal channel.
+
+---
+
+### 🌐 GET `/ical/export/{token}`
+Export the hotel's calendar as an iCal feed. Token-authenticated.
+
+---
+
+---
+
+## 30. Automated Guest Messaging (Owner)
+
+### 🔒 GET `/guest-messaging/templates`
+🏨 List all message templates (pre-arrival, post-stay, etc.).
+
+---
+
+### 🔒 POST `/guest-messaging/templates`
+🏨 Create or update a message template.
+
+**Body:**
+```json
+{
+  "name": "Pre-Arrival Welcome",
+  "trigger": "pre_arrival",
+  "hours_before": 24,
+  "subject": "Your stay at {{hotel_name}}",
+  "body": "Dear {{guest_name}}, we look forward to welcoming you...",
+  "channel": "email"
+}
+```
+
+---
+
+### 🔒 DELETE `/guest-messaging/templates/{id}`
+🏨 Delete a message template.
+
+---
+
+### 🔒 GET `/guest-messaging/logs`
+🏨 Message delivery logs.
+
+**Query params:** `date_from`, `date_to`, `status`
+
+---
+
+### 🔒 POST `/guest-messaging/test`
+🏨 Send a test message using a template.
+
+**Body:** `{ "template_id": 1, "booking_id": 5 }`
+
+---
+
+## 31. Competitor Benchmarking (Owner)
+
+### 🔒 GET `/competitor/prices`
+🏨 List all tracked competitor prices.
+
+---
+
+### 🔒 POST `/competitor/prices`
+🏨 Add a competitor price entry.
+
+**Body:** `{ "competitor_name": "Hotel ABC", "room_type": "Deluxe", "price": 2800, "date": "2026-07-01" }`
+
+---
+
+### 🔒 DELETE `/competitor/prices/{id}`
+🏨 Delete a competitor price entry.
+
+---
+
+### 🔒 GET `/competitor/summary`
+🏨 Summary comparison — your price vs. competitors.
+
+---
+
+### 🔒 GET `/competitor/parity-check`
+🏨 Check if your prices are in parity with competitors.
+
+---
+
+### 🔒 GET `/competitor/trend`
+🏨 Price trend over time vs. competitors.
+
+**Query params:** `date_from`, `date_to`
+
+---
+
+## 32. Multi-Currency
+
+### 🌐 GET `/currencies`
+List all supported currencies with exchange rates.
+
+---
+
+### 🌐 GET `/currencies/detect`
+Auto-detect currency from user's IP.
+
+---
+
+### 🔒 GET `/currencies/rates-map`
+Full rates map for all supported currencies.
+
+---
+
+### 🔒 PUT `/currencies/preference`
+👤 Set preferred display currency.
+
+**Body:** `{ "currency": "USD" }`
+
+---
+
+### 🔒 POST `/currencies/convert`
+Convert an amount between currencies.
+
+**Body:** `{ "amount": 5000, "from": "NPR", "to": "USD" }`
+
+---
+
+## 33. Tax Reporting (Owner)
+
+### 🔒 GET `/taxes`
+🏨 List all tax rates configured for the hotel.
+
+---
+
+### 🔒 POST `/taxes`
+🏨 Create or update a tax rate.
+
+**Body:** `{ "name": "VAT", "rate": 13, "type": "percentage", "hotel_id": 1 }`
+
+---
+
+### 🔒 DELETE `/taxes/{id}`
+🏨 Delete a tax rate.
+
+---
+
+### 🔒 GET `/taxes/report`
+🏨 Tax report for a date range.
+
+**Query params:** `date_from`, `date_to`, `hotel_id`
+
+---
+
+### 🔒 GET `/taxes/report/export`
+🏨 Export tax report as CSV or PDF.
+
+**Query params:** `format` (`csv` `pdf`), `date_from`, `date_to`
+
+---
+
+---
+
+## 34. Two-Factor Authentication (2FA)
+
+### 🔒 GET `/2fa/status`
+Get 2FA and biometric status for the authenticated user.
+
+---
+
+### 🔒 POST `/2fa/setup`
+Set up 2FA (generates TOTP QR code).
+
+**Response:** `{ "qr_code_url": "...", "secret": "..." }`
+
+---
+
+### 🔒 POST `/2fa/verify`
+Verify a TOTP code during setup.
+
+**Body:** `{ "code": "123456" }`
+
+---
+
+### 🔒 POST `/2fa/disable`
+Disable 2FA.
+
+**Body:** `{ "code": "123456" }`
+
+---
+
+### 🔒 POST `/2fa/validate`
+Validate a 2FA OTP during login.
+
+**Body:** `{ "code": "123456" }`
+
+---
+
+### 🔒 POST `/2fa/biometric/toggle`
+Enable or disable biometric login.
+
+**Body:** `{ "enabled": true }`
+
+---
+
+## 35. Video / Virtual Tours
+
+### 🌐 GET `/hotels/{hotelId}/videos`
+Public virtual tour videos for a hotel.
+
+---
+
+### 🔒 📎 POST `/hotel-owner/videos/upload`
+🏨 Upload a virtual tour video. *(See section 13)*
+
+---
+
+### 🔒 POST `/hotel-owner/videos/link`
+🏨 Add a virtual tour video link. *(See section 13)*
+
+---
+
+### 🔒 DELETE `/hotel-owner/videos/{id}`
+🏨 Delete a hotel video. *(See section 13)*
+
+---
+
+### 🔒 POST `/hotel-owner/videos/{id}/set-primary`
+🏨 Set primary virtual tour video. *(See section 13)*
+
+---
+
+## 36. Review Requests (Owner)
+
+### 🔒 POST `/review-requests/send`
+🏨 Send a review request to a guest after checkout.
+
+**Body:** `{ "booking_id": 1 }`
+
+---
+
+## 37. Recommendations
+
+### 🌐 GET `/recommendations/trending`
+Trending hotels based on bookings.
+
+---
+
+### 🌐 GET `/recommendations/nearby-popular`
+Popular hotels near a location.
+
+**Query params:** `latitude`, `longitude`, `radius`
+
+---
+
+### 🌐 GET `/recommendations/also-booked/{hotelId}`
+Hotels that users who booked this hotel also booked.
+
+---
+
+### 🔒 GET `/recommendations/for-you`
+👤 Personalized hotel recommendations based on booking history.
+
+---
+
+## 38. Filters & Search
+
+### 🌐 GET `/filters/options`
+Get all available filter options (amenities, room types, price ranges).
+
+---
+
+### 🌐 GET `/filters/advanced`
+Get advanced filter options (star rating, policies, facilities).
+
+---
+
+### 🌐 GET `/filters/search`
+Search hotels with applied filters.
+
+**Query params:** `city`, `check_in`, `check_out`, `guests`, `min_price`, `max_price`, `amenities`, `star_rating`, `sort_by`, `limit`, `offset`
+
+---
+
+## 39. Invoice
+
+### 🔒 GET `/invoice/{bookingId}/preview`
+👤 Preview the invoice for a booking in the browser.
+
+---
+
+### 🔒 GET `/invoice/{bookingId}/download`
+👤 Download the invoice as a PDF.
+
+---
+
+### 🔒 GET `/corporate/invoice/{bookingId}`
+👤 Download a GST-compliant corporate invoice.
+
+---
+
+---
+
+## 40. Blackout Dates (Owner)
+
+### 🌐 GET `/hotels/{hotelId}/blackout-dates`
+Public — get all blackout dates for a hotel.
+
+---
+
+### 🔒 POST `/hotel-owner/blackout-dates`
+🏨 Add specific blackout dates.
+
+**Body:** `{ "hotel_id": 1, "dates": ["2026-12-24", "2026-12-25"] }`
+
+---
+
+### 🔒 POST `/hotel-owner/blackout-dates/range`
+🏨 Add a date range as blackout.
+
+**Body:** `{ "hotel_id": 1, "from": "2026-12-20", "to": "2026-12-31" }`
+
+---
+
+### 🔒 DELETE `/hotel-owner/blackout-dates`
+🏨 Remove blackout dates.
+
+**Body:** `{ "hotel_id": 1, "dates": ["2026-12-24"] }`
+
+---
+
+## 41. Hotel Comparison
+
+### 🌐 GET `/hotels/compare`
+Compare multiple hotels side by side.
+
+**Query params:** `ids` — comma-separated hotel IDs, e.g. `ids=1,2,3`
+
+---
+
+## 42. Guest ID Verification
+
+### 🔒 POST `/id-verification/submit`
+👤 Submit ID documents for verification.
+
+**Body (`multipart/form-data`):**
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `id_type` | string | ✅ | `passport` `national_id` `driving_license` |
+| `id_number` | string | ✅ | Document number |
+| `front_image` | file | ✅ | Front of ID |
+| `back_image` | file | — | Back of ID |
+| `selfie` | file | — | Selfie with ID |
+
+---
+
+### 🔒 GET `/id-verification/status`
+👤 Get the current verification status.
+
+---
+
+## 43. Long-Stay / Monthly Rates
+
+### 🌐 GET `/hotels/{hotelId}/long-stay-rates`
+Public — get long-stay discount rates for a hotel.
+
+---
+
+### 🔒 GET `/long-stay/preview`
+👤 Preview the discounted price for a long stay.
+
+**Query params:** `hotel_id`, `room_type_id`, `check_in`, `check_out`
+
+---
+
+### 🔒 GET `/hotel-owner/long-stay-rates`
+🏨 List all long-stay rate rules.
+
+---
+
+### 🔒 POST `/hotel-owner/long-stay-rates`
+🏨 Create a long-stay rate rule.
+
+**Body:** `{ "hotel_id": 1, "min_nights": 7, "discount_percentage": 10 }`
+
+---
+
+### 🔒 PUT `/hotel-owner/long-stay-rates/{id}`
+🏨 Update a long-stay rate rule.
+
+---
+
+### 🔒 DELETE `/hotel-owner/long-stay-rates/{id}`
+🏨 Delete a long-stay rate rule.
+
+---
+
+## 44. PMS Integration (Owner)
+
+### 🔒 GET `/hotel-owner/pms/connections`
+🏨 List all PMS connections.
+
+---
+
+### 🔒 POST `/hotel-owner/pms/connections`
+🏨 Add a new PMS connection.
+
+**Body:** `{ "pms_name": "Opera", "api_key": "...", "hotel_id": 1 }`
+
+---
+
+### 🔒 PUT `/hotel-owner/pms/connections/{id}`
+🏨 Update a PMS connection.
+
+---
+
+### 🔒 DELETE `/hotel-owner/pms/connections/{id}`
+🏨 Remove a PMS connection.
+
+---
+
+### 🔒 POST `/hotel-owner/pms/connections/{id}/test`
+🏨 Test a PMS connection.
+
+---
+
+### 🔒 POST `/hotel-owner/pms/connections/{id}/sync`
+🏨 Manually trigger a PMS sync.
+
+---
+
+### 🔒 GET `/hotel-owner/pms/connections/{id}/logs`
+🏨 View sync logs for a PMS connection.
+
+---
+
+## 45. Split Payment
+
+### 🔒 POST `/split-payment/create`
+👤 Create a split payment for a booking.
+
+**Body:** `{ "booking_id": 1, "participants": [{ "email": "friend@example.com", "amount": 2500 }] }`
+
+**Response:** `{ "split_token": "...", "invite_links": [...] }`
+
+---
+
+### 🔒 GET `/split-payment/my-splits`
+👤 All split payment sessions created by the user.
+
+---
+
+### 🔒 GET `/split-payment/{token}`
+👤 Get details of a split payment session.
+
+---
+
+### 🌐 GET `/split-payment/pay/{inviteToken}`
+Get participant payment details via invite link (no auth needed).
+
+---
+
+### 🌐 POST `/split-payment/pay/{inviteToken}`
+Participant pays their share via invite link.
+
+**Body:** `{ "payment_method": "khalti", "amount": 2500 }`
+
+---
+
+---
+
+## 46. Housekeeping (Owner)
+
+### 🔒 GET `/housekeeping/tasks`
+🏨 List all housekeeping tasks.
+
+**Query params:** `status` (`pending` `in_progress` `done`), `date`, `room_id`
+
+---
+
+### 🔒 POST `/housekeeping/tasks`
+🏨 Create a housekeeping task.
+
+**Body:** `{ "room_id": 5, "task_type": "cleaning", "priority": "high", "assigned_to": 3, "notes": "Deep clean required" }`
+
+---
+
+### 🔒 PUT `/housekeeping/tasks/{id}/status`
+🏨 Update task status.
+
+**Body:** `{ "status": "done" }`
+
+---
+
+### 🔒 GET `/housekeeping/room-status`
+🏨 Room status grid — clean, dirty, occupied, vacant.
+
+---
+
+### 🔒 GET `/housekeeping/linen`
+🏨 Linen supply inventory.
+
+---
+
+### 🔒 POST `/housekeeping/linen`
+🏨 Update linen supply record.
+
+**Body:** `{ "item": "Bed Sheets", "quantity": 50, "hotel_id": 1 }`
+
+---
+
+## 47. Maintenance (Owner)
+
+### 🔒 GET `/maintenance/issues`
+🏨 List all maintenance issues.
+
+**Query params:** `status` (`open` `in_progress` `resolved`), `priority`
+
+---
+
+### 🔒 POST `/maintenance/issues`
+🏨 Report a maintenance issue.
+
+**Body:** `{ "room_id": 5, "title": "AC not working", "description": "...", "priority": "high" }`
+
+---
+
+### 🔒 PUT `/maintenance/issues/{id}/assign`
+🏨 Assign an issue to a staff member.
+
+**Body:** `{ "staff_id": 3 }`
+
+---
+
+### 🔒 PUT `/maintenance/issues/{id}/status`
+🏨 Update issue status.
+
+**Body:** `{ "status": "resolved" }`
+
+---
+
+### 🔒 GET `/maintenance/preventive`
+🏨 List preventive maintenance schedules.
+
+---
+
+### 🔒 POST `/maintenance/preventive`
+🏨 Create a preventive maintenance schedule.
+
+**Body:** `{ "title": "AC Filter Change", "frequency": "monthly", "next_due": "2026-07-01" }`
+
+---
+
+## 48. Hotel Staff Management (Owner)
+
+### 🔒 GET `/hotel-owner/staff`
+🏨 List all staff members.
+
+---
+
+### 🔒 POST `/hotel-owner/staff`
+🏨 Add a new staff member.
+
+**Body:** `{ "name": "Ram Sharma", "role": "housekeeping", "mobile": "9800000000", "hotel_id": 1 }`
+
+---
+
+### 🔒 PUT `/hotel-owner/staff/{id}`
+🏨 Update staff details.
+
+---
+
+### 🔒 DELETE `/hotel-owner/staff/{id}`
+🏨 Remove a staff member.
+
+---
+
+### 🔒 GET `/hotel-owner/staff/shifts`
+🏨 List all shift schedules.
+
+---
+
+### 🔒 POST `/hotel-owner/staff/shifts`
+🏨 Create a shift schedule.
+
+**Body:** `{ "staff_id": 2, "shift_start": "08:00", "shift_end": "16:00", "date": "2026-06-15" }`
+
+---
+
+### 🔒 POST `/hotel-owner/staff/attendance/clock-in`
+🏨 Record staff clock-in.
+
+**Body:** `{ "staff_id": 2 }`
+
+---
+
+### 🔒 POST `/hotel-owner/staff/attendance/clock-out`
+🏨 Record staff clock-out.
+
+**Body:** `{ "staff_id": 2 }`
+
+---
+
+### 🔒 GET `/hotel-owner/staff/attendance`
+🏨 View attendance records.
+
+**Query params:** `staff_id`, `date_from`, `date_to`
+
+---
+
+### 🔒 GET `/hotel-owner/staff/tasks`
+🏨 List tasks assigned to staff.
+
+---
+
+### 🔒 POST `/hotel-owner/staff/tasks`
+🏨 Assign a task to a staff member.
+
+**Body:** `{ "staff_id": 2, "title": "Clean Room 204", "due_time": "14:00" }`
+
+---
+
+### 🔒 PUT `/hotel-owner/staff/tasks/{id}/status`
+🏨 Update staff task status.
+
+**Body:** `{ "status": "completed" }`
+
+---
+
+---
+
+## 49. Digital Room Key
+
+### 🔒 POST `/digital-key/generate`
+👤 Generate a digital room key after check-in.
+
+**Body:** `{ "booking_id": 1 }`
+
+**Response:** `{ "key_token": "...", "valid_until": "2026-07-05T11:00:00" }`
+
+---
+
+### 🔒 GET `/digital-key/my`
+👤 All active digital keys for the user.
+
+---
+
+### 🔒 POST `/digital-key/unlock`
+👤 Unlock the room using the digital key.
+
+**Body:** `{ "key_token": "abc123", "room_id": 5 }`
+
+---
+
+### 🔒 POST `/digital-key/{id}/share`
+👤 Share a digital key with another guest.
+
+**Body:** `{ "email": "companion@example.com" }`
+
+---
+
+### 🔒 DELETE `/digital-key/{id}`
+👤 Revoke a digital key.
+
+---
+
+## 50. Front Desk (Owner)
+
+### 🔒 GET `/front-desk/room-grid`
+🏨 Visual room grid — status of all rooms (vacant, occupied, dirty).
+
+---
+
+### 🔒 POST `/front-desk/walk-in`
+🏨 Create a walk-in booking from the front desk.
+
+**Body:** `{ "room_type_id": 2, "guest_name": "John Doe", "mobile": "9800000000", "check_in": "2026-06-10", "check_out": "2026-06-12", "guests": 2 }`
+
+---
+
+### 🔒 POST `/front-desk/room-assign`
+🏨 Assign a specific room to a booking.
+
+**Body:** `{ "booking_id": 1, "room_id": 5 }`
+
+---
+
+### 🔒 GET `/front-desk/folio/{bookingId}`
+🏨 Get the guest folio (itemized charges) for a booking.
+
+---
+
+### 🔒 POST `/front-desk/folio/{bookingId}/charge`
+🏨 Add a charge to the guest folio.
+
+**Body:** `{ "description": "Mini-bar", "amount": 500 }`
+
+---
+
+### 🔒 POST `/front-desk/night-audit`
+🏨 Run the nightly audit process.
+
+---
+
+## 51. Hotel Stay Packages
+
+### 🌐 GET `/hotels/{hotelId}/packages`
+Public — available stay packages for a hotel.
+
+---
+
+### 🔒 GET `/hotel-owner/packages`
+🏨 List all packages created by the owner.
+
+---
+
+### 🔒 POST `/hotel-owner/packages`
+🏨 Create a stay package.
+
+**Body:** `{ "hotel_id": 1, "name": "Honeymoon Package", "description": "...", "price": 8000, "includes": ["breakfast", "spa", "airport_transfer"], "min_nights": 2 }`
+
+---
+
+### 🔒 PUT `/hotel-owner/packages/{id}`
+🏨 Update a package.
+
+---
+
+### 🔒 DELETE `/hotel-owner/packages/{id}`
+🏨 Delete a package.
+
+---
+
+## 52. Upselling & Add-ons
+
+### 🌐 GET `/hotels/{hotelId}/addons`
+Public — available add-ons for a hotel.
+
+---
+
+### 🔒 POST `/bookings/{bookingId}/addons`
+👤 Order an add-on for an existing booking.
+
+**Body:** `{ "addon_id": 3, "quantity": 1 }`
+
+---
+
+### 🔒 GET `/bookings/{bookingId}/addons`
+👤 List add-ons ordered for a booking.
+
+---
+
+### 🔒 GET `/hotel-owner/addons`
+🏨 List all add-ons created by the owner.
+
+---
+
+### 🔒 POST `/hotel-owner/addons`
+🏨 Create an add-on.
+
+**Body:** `{ "hotel_id": 1, "name": "Airport Transfer", "price": 1500, "description": "...", "is_available": true }`
+
+---
+
+### 🔒 PUT `/hotel-owner/addons/{id}`
+🏨 Update an add-on.
+
+---
+
+### 🔒 DELETE `/hotel-owner/addons/{id}`
+🏨 Delete an add-on.
+
+---
+
+### 🔒 GET `/hotel-owner/addon-orders`
+🏨 All add-on orders received.
+
+---
+
+### 🔒 PUT `/hotel-owner/addon-orders/{id}/status`
+🏨 Update add-on order status.
+
+**Body:** `{ "status": "delivered" }`
+
+---
+
+---
+
+## 53. Activities & Experiences
+
+### 🌐 GET `/hotels/{hotelId}/activities`
+Public — activities offered by a hotel.
+
+---
+
+### 🔒 POST `/activities/book`
+👤 Book an activity.
+
+**Body:** `{ "activity_id": 2, "booking_id": 1, "date": "2026-07-03", "participants": 2 }`
+
+---
+
+### 🔒 GET `/activities/my`
+👤 All activity bookings for the user.
+
+---
+
+### 🔒 GET `/hotel-owner/activities`
+🏨 List all activities created by the owner.
+
+---
+
+### 🔒 POST `/hotel-owner/activities`
+🏨 Create an activity.
+
+**Body:** `{ "hotel_id": 1, "name": "Yoga Session", "description": "...", "price": 800, "duration_minutes": 60, "max_participants": 10 }`
+
+---
+
+### 🔒 PUT `/hotel-owner/activities/{id}`
+🏨 Update an activity.
+
+---
+
+### 🔒 DELETE `/hotel-owner/activities/{id}`
+🏨 Delete an activity.
+
+---
+
+### 🔒 GET `/hotel-owner/activity-bookings`
+🏨 All activity bookings received.
+
+---
+
+### 🔒 PUT `/hotel-owner/activity-bookings/{id}/status`
+🏨 Update activity booking status.
+
+**Body:** `{ "status": "confirmed" }`
+
+---
+
+## 54. Corporate / Business Travel (Guest)
+
+### 🔒 POST `/corporate/register`
+👤 Register as a corporate traveler.
+
+**Body:** `{ "company_name": "Acme Corp", "gst_number": "...", "billing_address": "..." }`
+
+---
+
+### 🔒 GET `/corporate/my-account`
+👤 Get corporate account details.
+
+---
+
+### 🔒 POST `/corporate/add-traveler`
+👤 Add a traveler to the corporate account.
+
+**Body:** `{ "name": "Jane Doe", "email": "jane@acme.com", "mobile": "9800000001" }`
+
+---
+
+### 🔒 GET `/corporate/bookings`
+👤 All bookings under the corporate account.
+
+---
+
+### 🔒 GET `/corporate/invoice/{bookingId}`
+👤 Download a GST-compliant corporate invoice.
+
+---
+
+## 55. Group Bookings
+
+### 🔒 POST `/group-bookings/inquiry`
+👤 Submit a group booking inquiry.
+
+**Body:** `{ "hotel_id": 1, "check_in": "2026-09-01", "check_out": "2026-09-05", "rooms_needed": 10, "guests": 20, "event_type": "conference", "notes": "..." }`
+
+---
+
+### 🔒 GET `/group-bookings/my`
+👤 All group booking inquiries submitted by the user.
+
+---
+
+### 🔒 GET `/hotel-owner/group-bookings`
+🏨 All group booking inquiries received.
+
+---
+
+### 🔒 PUT `/hotel-owner/group-bookings/{id}/confirm`
+🏨 Confirm a group booking.
+
+**Body:** `{ "quoted_price": 50000, "notes": "Confirmed for 10 rooms." }`
+
+---
+
+### 🔒 PUT `/hotel-owner/group-bookings/{id}/rooming-list`
+🏨 Update the rooming list for a group booking.
+
+**Body:** `{ "rooms": [{ "room_id": 5, "guest_name": "John" }, { "room_id": 6, "guest_name": "Jane" }] }`
+
+---
+
+## 56. Flash Sales
+
+### 🌐 GET `/flash-sales`
+Active flash sale offers (public).
+
+---
+
+### 🔒 GET `/hotel-owner/flash-sales`
+🏨 List all flash sales created by the owner.
+
+---
+
+### 🔒 POST `/hotel-owner/flash-sales`
+🏨 Create a flash sale.
+
+**Body:** `{ "hotel_id": 1, "room_type_id": 2, "discount_percentage": 30, "starts_at": "2026-06-20T10:00:00", "ends_at": "2026-06-20T18:00:00", "max_bookings": 5 }`
+
+---
+
+### 🔒 PUT `/hotel-owner/flash-sales/{id}`
+🏨 Update a flash sale.
+
+---
+
+### 🔒 DELETE `/hotel-owner/flash-sales/{id}`
+🏨 Delete a flash sale.
+
+---
+
+---
+
+## 57. Membership / Subscription
+
+### 🌐 GET `/memberships`
+Public — available membership plans.
+
+---
+
+### 🔒 GET `/memberships/my`
+👤 The authenticated user's active membership.
+
+---
+
+### 🔒 POST `/memberships/subscribe`
+👤 Subscribe to a membership plan.
+
+**Body:** `{ "plan_id": 2, "payment_method": "khalti" }`
+
+---
+
+### 🔒 POST `/memberships/cancel`
+👤 Cancel the active membership.
+
+---
+
+## 58. Digital Concierge
+
+### 🔒 POST `/concierge/request`
+👤 Submit an in-stay concierge request.
+
+**Body:** `{ "booking_id": 1, "request_type": "room_service", "description": "Extra pillows please", "priority": "normal" }`
+
+---
+
+### 🔒 GET `/concierge/my`
+👤 All concierge requests made by the user.
+
+---
+
+### 🔒 GET `/hotel-owner/concierge`
+🏨 All pending concierge requests for the hotel.
+
+---
+
+### 🔒 PUT `/hotel-owner/concierge/{id}/status`
+🏨 Update concierge request status.
+
+**Body:** `{ "status": "fulfilled", "note": "Delivered to room." }`
+
+---
+
+## 59. Pre-Arrival Guest Profile
+
+### 🔒 GET `/guest/preferences`
+👤 Get saved guest preferences (pillow type, floor, dietary, etc.).
+
+---
+
+### 🔒 PUT `/guest/preferences`
+👤 Update guest preferences.
+
+**Body:** `{ "pillow": "soft", "floor": "high", "dietary": "vegetarian", "room_temperature": 22 }`
+
+---
+
+### 🔒 POST `/bookings/{bookingId}/pre-arrival`
+👤 Submit pre-arrival information for a booking.
+
+**Body:** `{ "arrival_time": "15:00", "special_requests": "Birthday decoration", "dietary": "vegan" }`
+
+---
+
+### 🔒 GET `/bookings/{bookingId}/pre-arrival`
+👤 Get pre-arrival information for a booking.
+
+---
+
+### 🔒 POST `/bookings/{bookingId}/online-checkin`
+👤 Complete online check-in before arrival.
+
+**Body:** `{ "id_number": "...", "arrival_time": "14:30" }`
+
+---
+
+## 60. Post-Stay Engagement (Owner)
+
+### 🔒 GET `/hotel-owner/post-stay/campaigns`
+🏨 List all post-stay email campaigns.
+
+---
+
+### 🔒 POST `/hotel-owner/post-stay/campaigns`
+🏨 Create a post-stay campaign.
+
+**Body:** `{ "hotel_id": 1, "name": "Thank You Email", "trigger_days_after": 1, "subject": "How was your stay?", "body": "..." }`
+
+---
+
+### 🔒 PUT `/hotel-owner/post-stay/campaigns/{id}`
+🏨 Update a campaign.
+
+---
+
+### 🔒 DELETE `/hotel-owner/post-stay/campaigns/{id}`
+🏨 Delete a campaign.
+
+---
+
+### 🔒 GET `/hotel-owner/post-stay/logs`
+🏨 Campaign delivery logs.
+
+---
+
+## 61. Revenue Management Dashboard (Owner)
+
+### 🔒 GET `/revenue/dashboard`
+🏨 Full revenue dashboard — RevPAR, ADR, occupancy, forecasts.
+
+---
+
+### 🔒 GET `/revenue/snapshots`
+🏨 Historical revenue snapshots.
+
+---
+
+### 🔒 POST `/revenue/snapshot/generate`
+🏨 Generate a new revenue snapshot for today.
+
+---
+
+## 62. Multi-Property Management (Owner)
+
+### 🔒 GET `/chains/my`
+🏨 List all hotel chains / groups owned by the user.
+
+---
+
+### 🔒 POST `/chains`
+🏨 Create a new hotel chain.
+
+**Body:** `{ "name": "Mountain Resorts Group", "description": "..." }`
+
+---
+
+### 🔒 PUT `/chains/{id}`
+🏨 Update chain details.
+
+---
+
+### 🔒 POST `/chains/{id}/add-hotel`
+🏨 Add a hotel to a chain.
+
+**Body:** `{ "hotel_id": 3 }`
+
+---
+
+### 🔒 GET `/chains/{id}/analytics`
+🏨 Aggregated analytics across all hotels in a chain.
+
+---
+
+### 🔒 POST `/chains/{id}/bulk-pricing`
+🏨 Apply bulk pricing update across all hotels in a chain.
+
+**Body:** `{ "adjustment_type": "percentage", "adjustment": 10, "date_from": "2026-07-01", "date_to": "2026-07-31" }`
+
+---
+
+---
+
+## 63. Event / Banquet Hall
+
+### 🌐 GET `/hotels/{hotelId}/event-spaces`
+Public — event and banquet spaces at a hotel.
+
+---
+
+### 🔒 POST `/events/book`
+👤 Book an event space.
+
+**Body:** `{ "event_space_id": 1, "date": "2026-08-15", "start_time": "10:00", "end_time": "18:00", "guests": 100, "event_type": "wedding", "notes": "..." }`
+
+---
+
+### 🔒 GET `/events/my`
+👤 All event bookings made by the user.
+
+---
+
+### 🔒 GET `/hotel-owner/event-spaces`
+🏨 List all event spaces for the owner's hotel.
+
+---
+
+### 🔒 POST `/hotel-owner/event-spaces`
+🏨 Create an event space.
+
+**Body:** `{ "hotel_id": 1, "name": "Grand Ballroom", "capacity": 200, "price_per_hour": 5000, "description": "..." }`
+
+---
+
+### 🔒 PUT `/hotel-owner/event-spaces/{id}`
+🏨 Update an event space.
+
+---
+
+### 🔒 GET `/hotel-owner/event-bookings`
+🏨 All event bookings received.
+
+---
+
+### 🔒 PUT `/hotel-owner/event-bookings/{id}/status`
+🏨 Update event booking status.
+
+**Body:** `{ "status": "confirmed" }`
+
+---
+
+## 64. Inventory / Stock Management (Owner)
+
+### 🔒 GET `/hotel-owner/inventory`
+🏨 List all inventory items.
+
+---
+
+### 🔒 POST `/hotel-owner/inventory`
+🏨 Add an inventory item.
+
+**Body:** `{ "hotel_id": 1, "name": "Towels", "category": "linen", "quantity": 100, "unit": "pieces", "reorder_level": 20 }`
+
+---
+
+### 🔒 PUT `/hotel-owner/inventory/{id}`
+🏨 Update an inventory item.
+
+---
+
+### 🔒 POST `/hotel-owner/inventory/{id}/transaction`
+🏨 Record a stock transaction (in/out).
+
+**Body:** `{ "type": "out", "quantity": 10, "notes": "Distributed to rooms" }`
+
+---
+
+### 🔒 GET `/hotel-owner/inventory/{id}/transactions`
+🏨 Transaction history for an inventory item.
+
+---
+
+### 🔒 GET `/hotel-owner/inventory/low-stock-alerts`
+🏨 Items that have fallen below reorder level.
+
+---
+
+## 65. Mid-Stay Feedback
+
+### 🔒 POST `/mid-stay/feedback`
+👤 Submit feedback during a stay.
+
+**Body:** `{ "booking_id": 1, "rating": 4, "message": "Room is great but AC is noisy." }`
+
+---
+
+### 🔒 GET `/hotel-owner/mid-stay-feedback`
+🏨 All mid-stay feedback received.
+
+---
+
+### 🔒 POST `/hotel-owner/mid-stay-feedback/{id}/respond`
+🏨 Respond to mid-stay feedback.
+
+**Body:** `{ "response": "We'll fix the AC right away!" }`
+
+---
+
+### 🔒 GET `/hotel-owner/mid-stay-feedback/stats`
+🏨 Aggregated mid-stay feedback statistics.
+
+---
+
+## 66. Reputation Management (Owner)
+
+### 🔒 GET `/hotel-owner/reputation`
+🏨 Reputation summary — average rating, sentiment, trends.
+
+---
+
+### 🔒 GET `/hotel-owner/reputation/reviews`
+🏨 All reviews from all platforms (aggregated).
+
+---
+
+### 🔒 POST `/hotel-owner/reputation/reviews`
+🏨 Import a review from an external platform.
+
+**Body:** `{ "platform": "TripAdvisor", "rating": 4, "review": "...", "reviewer": "John D.", "date": "2026-05-10" }`
+
+---
+
+### 🔒 POST `/hotel-owner/reputation/reviews/{id}/respond`
+🏨 Respond to a review.
+
+**Body:** `{ "response": "Thank you for your kind words!" }`
+
+---
+
+---
+
+## 67. Travel Insurance
+
+### 🌐 GET `/insurance/plans`
+Public — available travel insurance plans.
+
+---
+
+### 🔒 POST `/insurance/purchase`
+👤 Purchase travel insurance for a booking.
+
+**Body:** `{ "plan_id": 1, "booking_id": 5 }`
+
+---
+
+### 🔒 GET `/insurance/my`
+👤 All insurance policies purchased by the user.
+
+---
+
+## 68. Affiliate / Referral Partner
+
+### 🔒 POST `/affiliate/register`
+👤 Register as an affiliate partner.
+
+**Body:** `{ "website": "https://myblog.com", "description": "Travel blogger" }`
+
+---
+
+### 🔒 GET `/affiliate/dashboard`
+👤 Affiliate dashboard — clicks, conversions, earnings.
+
+---
+
+### 🔒 GET `/affiliate/conversions`
+👤 List all affiliate conversions.
+
+---
+
+### 🔒 PUT `/affiliate/bank-details`
+👤 Update bank details for affiliate payouts.
+
+**Body:** `{ "bank_name": "NIC Asia", "account_number": "...", "account_holder": "..." }`
+
+---
+
+## 69. Smart Room Controls
+
+### 🔒 GET `/smart-room/{bookingId}`
+👤 Get smart room controls for an active booking (lights, AC, TV, DND).
+
+---
+
+### 🔒 PUT `/smart-room/{bookingId}`
+👤 Update smart room settings.
+
+**Body:** `{ "lights": "off", "ac_temperature": 22, "tv": "on", "dnd": true }`
+
+---
+
+### 🔒 GET `/hotel-owner/smart-rooms`
+🏨 Overview of all smart room statuses.
+
+---
+
+## 70. Sustainability / Eco
+
+### 🌐 GET `/hotels/{hotelId}/eco-info`
+Public — eco-friendly initiatives and certifications for a hotel.
+
+---
+
+### 🔒 POST `/eco/opt-out`
+👤 Opt out of daily housekeeping to reduce environmental impact.
+
+**Body:** `{ "booking_id": 1, "opt_out_dates": ["2026-07-02", "2026-07-03"] }`
+
+---
+
+### 🔒 GET `/eco/my`
+👤 All eco opt-out choices made by the user.
+
+---
+
+## 71. App Screen APIs
+
+These endpoints power specific app screens with real data.
+
+### 🔒 GET `/profile/stats`
+👤 Profile screen — trip count, reviews, saved hotels, loyalty points.
+
+---
+
+### 🔒 GET `/wallet`
+👤 Wallet screen — balance and transaction history.
+
+---
+
+### 🔒 GET `/owner/calendar`
+🏨 Yearly calendar screen — occupancy and blocked dates.
+
+**Query params:** `hotel_id`, `year`
+
+---
+
+### 🔒 GET `/owner/tax-report`
+🏨 Tax report screen — revenue and tax figures.
+
+---
+
+### 🔒 GET `/owner/competitor-benchmark`
+🏨 Competitor benchmarking screen — real competitor prices.
+
+---
+
+### 🔒 GET `/owner/review-requests`
+🏨 Review request screen — recent checkouts list.
+
+---
+
+### 🔒 GET `/owner/earnings-summary`
+🏨 Earnings provider — change % and occupancy rate.
+
+---
+
+## 72. Notifications
+
+### 🔒 GET `/get-notification-list`
+Get all notifications for the authenticated user.
+
+---
+
+### 🔒 PUT `/notifications/{id}/read`
+Mark a single notification as read.
+
+---
+
+### 🔒 PUT `/notifications/read-all`
+Mark all notifications as read.
+
+---
+
+## 73. NLP Search
+
+### 🌐 GET `/search/nlp`
+Natural language hotel search.
+
+**Query params:** `q` — e.g. `"pet friendly hotel in Pokhara under 3000"`
+
+---
+
+### 🌐 GET `/search/suggestions`
+Auto-complete search suggestions.
+
+**Query params:** `q` — partial search term
+
+---
+
+### 🌐 GET `/search/popular`
+Popular / trending search terms.
+
+---
+
+---
+
+## Quick Reference — Endpoint Count
+
+| Role | Count |
+|------|-------|
+| 🌐 Public | ~45 |
+| 👤 Guest (auth) | ~80 |
+| 🏨 Owner (auth) | ~110 |
+| **Total** | **~235** |
+
+---
+
+*Generated from `routes/api.php` — Base URL: `http://209.50.241.46:2000/api`*

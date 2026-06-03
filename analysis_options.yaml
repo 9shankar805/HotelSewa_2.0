@@ -1,0 +1,22 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    unused_import: ignore
+    unused_field: ignore
+    unused_element: ignore
+    unused_local_variable: ignore
+    dead_code: ignore
+    unnecessary_non_null_assertion: ignore
+    unnecessary_cast: ignore
+    unnecessary_null_comparison: ignore
+    unnecessary_type_check: ignore
+    dead_code_catch_following_catch: ignore
+    unreachable_switch_default: ignore
+    invalid_null_aware_operator: ignore
+    unused_catch_clause: ignore
+    unused_catch_stack: ignore
+
+linter:
+  rules:
+    avoid_print: false

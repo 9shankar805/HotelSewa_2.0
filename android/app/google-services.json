@@ -1,0 +1,142 @@
+{
+  "project_info": {
+    "project_number": "664870792174",
+    "project_id": "hotelsewa-66c35",
+    "storage_bucket": "hotelsewa-66c35.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:664870792174:android:caa1dd7cb7429b3b493cff",
+        "android_client_info": {
+          "package_name": "com.hotelsewa.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "664870792174-1pl1vsco8ug3c5t9tt8n9g1263bttq4h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hotelsewa.app",
+            "certificate_hash": "ff305145a9d792f17064ff2764a4c69ed0cec2df"
+          }
+        },
+        {
+          "client_id": "664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYQXmv8LAdj_CqkD89FGWtyFjc-XD1dk4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:664870792174:android:02f1a9066430c6ad493cff",
+        "android_client_info": {
+          "package_name": "com.hotelsewaowner.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "664870792174-rr32i4t746mgac8e7mosdrd5944iipug.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hotelsewaowner.app",
+            "certificate_hash": "ff305145a9d792f17064ff2764a4c69ed0cec2df"
+          }
+        },
+        {
+          "client_id": "664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYQXmv8LAdj_CqkD89FGWtyFjc-XD1dk4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:664870792174:android:e6e847610899df38493cff",
+        "android_client_info": {
+          "package_name": "com.oyo.customer.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYQXmv8LAdj_CqkD89FGWtyFjc-XD1dk4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:664870792174:android:78fe9a8a7cb3319d493cff",
+        "android_client_info": {
+          "package_name": "com.oyohotelowner"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYQXmv8LAdj_CqkD89FGWtyFjc-XD1dk4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
