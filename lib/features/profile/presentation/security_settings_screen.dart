@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/api_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/shared/api_service.dart';
+import '../../../core/services/two_factor_service.dart';
 
 class SecuritySettingsScreen extends StatefulWidget {
   const SecuritySettingsScreen({Key? key}) : super(key: key);
@@ -13,9 +14,14 @@ class SecuritySettingsScreen extends StatefulWidget {
 }
 
 class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
+  final _twoFactorService = TwoFactorService();
+
   bool _biometricEnabled = false;
   bool _twoFactorEnabled = false;
   bool _loginAlerts = true;
+  bool _loadingStatus = true;
+  bool _togglingBiometric = false;
+  bool _toggling2FA = false;
 
   // Change password
   final _currentPwController = TextEditingController();
@@ -27,11 +33,139 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
   bool _changingPw = false;
 
   @override
+  void initState() {
+    super.initState();
+    _loadSecurityStatus();
+  }
+
+  @override
   void dispose() {
     _currentPwController.dispose();
     _newPwController.dispose();
     _confirmPwController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSecurityStatus() async {
+    setState(() => _loadingStatus = true);
+    try {
+      final result = await _twoFactorService.getTwoFactorStatus();
+      if (result['success'] == true && mounted) {
+        final status = result['status'] ?? {};
+        setState(() {
+          _twoFactorEnabled = status['enabled'] == true || status['is_enabled'] == true;
+          _biometricEnabled = status['biometric_enabled'] == true || status['biometric'] == true;
+          _loginAlerts = status['login_alerts'] ?? status['login_notifications'] ?? true;
+        });
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loadingStatus = false);
+  }
+
+  Future<void> _toggleBiometric(bool enabled) async {
+    setState(() => _togglingBiometric = true);
+    final result = await _twoFactorService.toggleBiometricAuth(enabled: enabled);
+    if (mounted) {
+      if (result['success'] == true) {
+        setState(() => _biometricEnabled = enabled);
+        _showSnack(enabled ? 'Biometric login enabled' : 'Biometric login disabled');
+      } else {
+        _showSnack(result['message'] ?? 'Failed to update biometric setting', isError: true);
+      }
+      setState(() => _togglingBiometric = false);
+    }
+  }
+
+  Future<void> _toggle2FA(bool enabled) async {
+    if (enabled) {
+      // Show setup dialog
+      await _show2FASetupDialog();
+    } else {
+      // Require password to disable
+      await _show2FADisableDialog();
+    }
+  }
+
+  Future<void> _show2FASetupDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Enable Two-Factor Auth', style: TextStyle(fontWeight: FontWeight.w700)),
+        content: const Text('A verification code will be sent to your phone or email each time you log in.\n\nChoose your preferred method:', style: TextStyle(color: AppColors.gray, height: 1.5)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: const Text('Enable via SMS', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _toggling2FA = true);
+    final result = await _twoFactorService.setupTwoFactor(method: 'sms');
+    if (mounted) {
+      if (result['success'] == true) {
+        setState(() => _twoFactorEnabled = true);
+        _showSnack('Two-factor authentication enabled');
+      } else {
+        _showSnack(result['message'] ?? 'Failed to enable 2FA', isError: true);
+      }
+      setState(() => _toggling2FA = false);
+    }
+  }
+
+  Future<void> _show2FADisableDialog() async {
+    final pwCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Disable Two-Factor Auth', style: TextStyle(fontWeight: FontWeight.w700)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Enter your password to disable 2FA:', style: TextStyle(color: AppColors.gray)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: pwCtrl,
+              obscureText: true,
+              decoration: InputDecoration(
+                hintText: 'Current password',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: const Text('Disable', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _toggling2FA = true);
+    final result = await _twoFactorService.disableTwoFactor(password: pwCtrl.text);
+    pwCtrl.dispose();
+    if (mounted) {
+      if (result['success'] == true) {
+        setState(() => _twoFactorEnabled = false);
+        _showSnack('Two-factor authentication disabled');
+      } else {
+        _showSnack(result['message'] ?? 'Failed to disable 2FA', isError: true);
+      }
+      setState(() => _toggling2FA = false);
+    }
   }
 
   Future<void> _changePassword() async {
@@ -109,11 +243,14 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
             const SizedBox(height: 10),
             _card(child: Column(
               children: [
-                _toggleRow(Icons.fingerprint_rounded, AppColors.primary, 'Biometric Login', 'Use fingerprint or Face ID', _biometricEnabled, (v) => setState(() => _biometricEnabled = v)),
+                _toggleRow(Icons.fingerprint_rounded, AppColors.primary, 'Biometric Login', 'Use fingerprint or Face ID',
+                    _biometricEnabled, _togglingBiometric ? null : _toggleBiometric),
                 const Divider(color: AppColors.lightGray, height: 1),
-                _toggleRow(Icons.security_rounded, AppColors.success, 'Two-Factor Authentication', 'Extra security via SMS/email', _twoFactorEnabled, (v) => setState(() => _twoFactorEnabled = v)),
+                _toggleRow(Icons.security_rounded, AppColors.success, 'Two-Factor Authentication', 'Extra security via SMS/email',
+                    _twoFactorEnabled, _toggling2FA ? null : _toggle2FA),
                 const Divider(color: AppColors.lightGray, height: 1),
-                _toggleRow(Icons.notifications_active_outlined, AppColors.warning, 'Login Alerts', 'Get notified of new sign-ins', _loginAlerts, (v) => setState(() => _loginAlerts = v)),
+                _toggleRow(Icons.notifications_active_outlined, AppColors.warning, 'Login Alerts', 'Get notified of new sign-ins',
+                    _loginAlerts, (v) => setState(() => _loginAlerts = v)),
               ],
             )).animate().fadeIn().slideY(begin: 0.1),
             const SizedBox(height: 20),
@@ -167,7 +304,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     child: child,
   );
 
-  Widget _toggleRow(IconData icon, Color color, String title, String sub, bool value, ValueChanged<bool> onChanged) {
+  Widget _toggleRow(IconData icon, Color color, String title, String sub, bool value, ValueChanged<bool>? onChanged) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
@@ -178,7 +315,9 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
             Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkGray)),
             Text(sub, style: const TextStyle(fontSize: 12, color: AppColors.gray)),
           ])),
-          Switch(value: value, onChanged: onChanged, activeColor: AppColors.primary),
+          onChanged == null
+              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+              : Switch(value: value, onChanged: onChanged, activeColor: AppColors.primary),
         ],
       ),
     );

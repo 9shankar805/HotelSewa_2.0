@@ -69,6 +69,16 @@ class _DealsScreenState extends State<DealsScreen> {
     _filterDeals();
   }
 
+  String _formatDate(String raw) {
+    if (raw.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(raw);
+      return '${dt.year}-${dt.month.toString().padLeft(2,'0')}-${dt.day.toString().padLeft(2,'0')}';
+    } catch (_) {
+      return raw.split('T')[0];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -163,10 +173,13 @@ class _DealsScreenState extends State<DealsScreen> {
   }
 
   Widget _buildDealCard(Map deal, int index) {
+    // API fields: id, title/name, description, discount_value, valid_from, valid_to, hotel_id, image/cover_image
     final title = deal['title'] ?? deal['name'] ?? 'Special Deal';
     final description = deal['description'] ?? '';
-    final discount = deal['discount_percentage'] ?? deal['discount'] ?? 0;
-    final validUntil = deal['valid_until'] ?? deal['expires_at'] ?? '';
+    // discount_value is the real column; discount_percentage is a fallback alias
+    final discount = deal['discount_value'] ?? deal['discount_percentage'] ?? deal['discount'] ?? 0;
+    // valid_to is the real column; fallback to valid_until / expires_at
+    final validUntil = _formatDate(deal['valid_to'] ?? deal['valid_until'] ?? deal['expires_at'] ?? '');
     final hotelName = deal['hotel_name'] ?? deal['hotel']?['name'] ?? '';
     final imageUrl = deal['image'] ?? deal['cover_image'] ?? '';
 

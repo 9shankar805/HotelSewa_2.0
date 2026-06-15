@@ -63,10 +63,25 @@ class _CouponsScreenState extends State<CouponsScreen> {
       if (result['success'] == true) {
         final data = result['coupons'];
         if (data is List && data.isNotEmpty) {
-          setState(() {
-            _coupons = List<Map<String, dynamic>>.from(data);
-            _loading = false;
-          });
+          // Map real API fields → internal fields used by the UI
+          // API returns: id, code, discount, discount_type, expires_at, usage_limit, usage_count
+          final mapped = data.map<Map<String, dynamic>>((c) {
+            final m = Map<String, dynamic>.from(c as Map);
+            return {
+              'id': m['id']?.toString(),
+              'code': m['code'] ?? '',
+              'title': m['title'] ?? m['code'] ?? 'Coupon',
+              'description': m['description'] ?? _buildCouponDesc(m),
+              'discount': m['discount'] ?? m['discount_value'] ?? 0,
+              'type': m['discount_type'] ?? m['type'] ?? 'percentage',
+              'minAmount': (m['min_order_amount'] ?? m['minimum_amount'] ?? m['minAmount'] ?? 0),
+              'maxDiscount': (m['max_discount'] ?? m['maxDiscount'] ?? double.infinity),
+              'validUntil': _formatExpiry(m['expires_at'] ?? m['valid_to'] ?? m['validUntil']),
+              'usageLimit': m['usage_limit'],
+              'usageCount': m['usage_count'] ?? 0,
+            };
+          }).toList();
+          setState(() { _coupons = mapped; _loading = false; });
           return;
         }
       }
@@ -75,6 +90,24 @@ class _CouponsScreenState extends State<CouponsScreen> {
       _coupons = List<Map<String, dynamic>>.from(_fallbackCoupons);
       _loading = false;
     });
+  }
+
+  String _buildCouponDesc(Map m) {
+    final discount = m['discount'] ?? 0;
+    final type = m['discount_type'] ?? 'percentage';
+    if (type == 'percentage') return 'Get $discount% off on your booking';
+    return 'Get NPR $discount off on your booking';
+  }
+
+  String _formatExpiry(dynamic raw) {
+    if (raw == null) return '';
+    final s = raw.toString();
+    try {
+      final dt = DateTime.parse(s);
+      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return s.split('T')[0];
+    }
   }
 
   double _calculateDiscount(Map<String, dynamic> coupon) {

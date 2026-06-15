@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/constants/api_config.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/services/shared/api_service.dart';
+import '../../../core/services/wallet_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({Key? key}) : super(key: key);
@@ -13,6 +11,7 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  final _walletService = WalletService();
   bool _loading = true;
   String? _error;
   double _walletBalance = 0;
@@ -29,33 +28,40 @@ class _WalletScreenState extends State<WalletScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken');
-      final response = await ApiService.get(ApiConfig.paymentTransactionsEndpoint, token: token);
-      if (response['success'] == true) {
-        final data = response['data'] ?? {};
-        // Handle both list and map responses
+      // GET /wallet — returns balance, points, transactions together
+      final walletResult = await _walletService.getWallet();
+      if (walletResult['success'] == true) {
+        final data = walletResult['wallet'] ?? {};
+        _walletBalance = (data['balance'] ?? data['wallet_balance'] ?? 0 as num).toDouble();
+        _pointsBalance = (data['points_balance'] ?? data['loyalty_points'] ?? 0 as num).toDouble();
+        _totalSpent = (data['total_spent'] ?? 0 as num).toDouble();
+
+        // Transactions may be embedded or separate
         List txnList = [];
-        if (data is List) {
-          txnList = data;
-        } else if (data is Map) {
-          txnList = data['transactions'] ?? data['data'] ?? [];
-          _walletBalance = (data['wallet_balance'] as num?)?.toDouble() ?? 0;
-          _pointsBalance = (data['points_balance'] as num?)?.toDouble() ?? 0;
-          _totalSpent = (data['total_spent'] as num?)?.toDouble() ?? 0;
+        if (data['transactions'] is List) {
+          txnList = data['transactions'] as List;
+        } else {
+          // Fall back to payment transactions endpoint
+          final txnResult = await _walletService.getWalletTransactions(limit: 20);
+          if (txnResult['success'] == true) {
+            final txnData = txnResult['transactions'];
+            txnList = txnData is List ? txnData : (txnData is Map ? (txnData['data'] ?? txnData['transactions'] ?? []) : []);
+          }
         }
-        // Calculate totals from transactions if not provided
+
+        // Calculate total spent from transactions if not provided
         if (_totalSpent == 0 && txnList.isNotEmpty) {
           _totalSpent = txnList
               .where((t) => t['type'] == 'debit')
               .fold(0.0, (sum, t) => sum + ((t['amount'] as num?)?.toDouble() ?? 0));
         }
+
         setState(() {
           _transactions = List<Map<String, dynamic>>.from(txnList);
           _loading = false;
         });
       } else {
-        setState(() { _error = response['message'] ?? 'Failed to load wallet'; _loading = false; });
+        setState(() { _error = walletResult['message'] ?? 'Failed to load wallet'; _loading = false; });
       }
     } catch (e) {
       setState(() { _error = 'Failed to load wallet'; _loading = false; });
