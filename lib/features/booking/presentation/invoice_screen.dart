@@ -154,7 +154,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                             ])),
                             Expanded(child: _section('Hotel', [
                               booking['hotelName'] ?? 'Grand Horizon Resort',
-                              booking['location'] ?? 'Mumbai, Maharashtra',
+                              booking['location'] ?? 'Kathmandu, Nepal',
                             ], align: CrossAxisAlignment.end)),
                           ],
                         ),
@@ -177,19 +177,19 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                         // Price breakdown
                         const Text('Price Breakdown', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.darkGray)),
                         const SizedBox(height: 12),
-                        _priceRow('Room charges (${booking['nights'] ?? 2} nights)', 'â‚¹$roomCharge'),
+                        _priceRow('Room charges (${booking['nights'] ?? 2} nights)', 'NPR $roomCharge'),
                         const SizedBox(height: 8),
-                        _priceRow('GST (18%)', 'â‚¹$taxes'),
+                        _priceRow('GST (18%)', 'NPR $taxes'),
                         if (discount > 0) ...[
                           const SizedBox(height: 8),
-                          _priceRow('Discount', '-â‚¹$discount', valueColor: AppColors.success),
+                          _priceRow('Discount', '-NPR $discount', valueColor: AppColors.success),
                         ],
                         const Divider(color: AppColors.lightGray, height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text('Total Amount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.darkGray)),
-                            Text('â‚¹$total', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                            Text('NPR $total', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -296,3 +296,4 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   };
 
 }
+

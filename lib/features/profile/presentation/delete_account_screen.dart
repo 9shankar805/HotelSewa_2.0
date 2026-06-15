@@ -44,7 +44,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       return;
     }
     setState(() => _loading = true);
-    final result = await _authService.deleteAccount();
+    final result = await _authService.deleteAccount(password: _pwController.text);
     if (!mounted) return;
     setState(() => _loading = false);
     if (result['success']) {

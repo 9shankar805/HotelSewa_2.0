@@ -204,6 +204,14 @@ class AuthProvider extends ChangeNotifier {
           (response['data'] as Map).isNotEmpty &&
           (response['data'] as Map).containsKey('status')) {
         final status = response['data']['status'] as String?;
+        final hotelId = response['data']['id']?.toString();
+
+        // Save hotelId to SharedPreferences
+        if (hotelId != null && hotelId.isNotEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('hotelId', hotelId);
+          debugPrint('Saved hotelId to SharedPreferences: $hotelId');
+        }
 
         // Validate status is a known value
         if (status == null || status.isEmpty) {

@@ -56,6 +56,14 @@ class _RateStayScreenState extends State<RateStayScreen> {
       hotelId: booking['hotelId']?.toString() ?? '',
       rating: _overallRating.toInt(),
       comment: _reviewCtrl.text.trim(),
+      // Pass all category ratings and highlights
+      extraData: {
+        if (_cleanlinessRating > 0) 'cleanliness_rating': _cleanlinessRating.toInt(),
+        if (_serviceRating > 0) 'service_rating': _serviceRating.toInt(),
+        if (_locationRating > 0) 'location_rating': _locationRating.toInt(),
+        if (_valueRating > 0) 'value_rating': _valueRating.toInt(),
+        if (_highlights.isNotEmpty) 'highlights': _highlights.toList(),
+      },
     );
     if (!mounted) return;
     setState(() => _loading = false);

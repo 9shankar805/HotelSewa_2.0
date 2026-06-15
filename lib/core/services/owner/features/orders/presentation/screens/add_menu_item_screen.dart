@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/menu_item_model.dart';
 import '../../../../core/services/ordering_service.dart';
 import '../../../../../../../core/constants/app_colors.dart';
+import '../../../../../../../features/hotel/presentation/services/hotel_service.dart';
 
 class AddMenuItemScreen extends StatefulWidget {
   final MenuItemModel? item;
@@ -54,10 +55,24 @@ class _AddMenuItemScreenState extends State<AddMenuItemScreen> {
   }
 
   Future<void> _loadHotelId() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _hotelId = prefs.getInt('selected_hotel_id');
-    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getInt('selected_hotel_id') ??
+          int.tryParse(prefs.getString('hotelId') ?? prefs.getString('hotel_id') ?? '');
+      if (stored != null) { setState(() => _hotelId = stored); return; }
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
+      if (token == null) return;
+      HotelService.setToken(token);
+      final response = await HotelService().getHotelStatus();
+      if (response['success'] == true && response['data'] != null) {
+        final id = response['data']['id'];
+        final idInt = id is int ? id : int.tryParse(id?.toString() ?? '');
+        if (idInt != null) {
+          await prefs.setInt('selected_hotel_id', idInt);
+          if (mounted) setState(() => _hotelId = idInt);
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -86,16 +101,14 @@ class _AddMenuItemScreenState extends State<AddMenuItemScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_hotelId == null) {
-      _showError('Hotel not selected');
-      return;
-    }
+    if (_hotelId == null) await _loadHotelId();
+    if (_hotelId == null) { _showError('Could not determine hotel. Please try again.'); return; }
 
     setState(() => _isLoading = true);
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       if (token == null) {
         _showError('Please login first');

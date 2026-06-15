@@ -47,11 +47,11 @@ class _TermsScreenState extends State<TermsScreen> {
     },
     {
       'title': '9. Governing Law',
-      'content': 'These Terms shall be governed by and construed in accordance with the laws of India. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts in Mumbai, Maharashtra.',
+      'content': 'These Terms shall be governed by and construed in accordance with the laws of Nepal. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts in Kathmandu, Nepal.',
     },
     {
       'title': '10. Contact Us',
-      'content': 'If you have any questions about these Terms, please contact us at:\n\nHotelSewa Support\nEmail: legal@hotelsewa.com\nPhone: +91-80-4718-8888\nAddress: HotelSewa Technologies Pvt. Ltd., Mumbai, Maharashtra, India.',
+      'content': 'If you have any questions about these Terms, please contact us at:\n\nHotelSewa Support\nEmail: legal@hotelsewa.com\nPhone: +91-80-4718-8888\nAddress: HotelSewa Technologies Pvt. Ltd., Kathmandu, Nepal.',
     },
   ];
 
@@ -169,3 +169,5 @@ class _TermsScreenState extends State<TermsScreen> {
     );
   }
 }
+
+

@@ -39,7 +39,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       if (token == null) {
         _showError('Please login first');
@@ -48,17 +48,38 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
 
       final response = await OrderingService.getMyMenu(token);
 
-      if (response['status'] == true) {
-        final data = response['data'];
-        final menu = data['menu'] as List<dynamic>? ?? [];
+      // API returns success:true OR status:true depending on endpoint
+      final isOk = response['success'] == true || response['status'] == true;
+
+      if (isOk) {
+        final rawData = response['data'];
+        // Handle both {menu: [...]} and flat list
+        List<dynamic> menu = [];
+        if (rawData is Map) {
+          menu = rawData['menu'] as List<dynamic>? ??
+              rawData['items'] as List<dynamic>? ??
+              rawData['data'] as List<dynamic>? ?? [];
+        } else if (rawData is List) {
+          menu = rawData;
+        }
 
         final Map<String, List<MenuItemModel>> grouped = {};
         for (var category in menu) {
-          final categoryName = category['category'] as String;
-          final items = (category['items'] as List<dynamic>)
-              .map((item) => MenuItemModel.fromJson(item))
-              .toList();
-          grouped[categoryName] = items;
+          if (category is Map) {
+            final categoryName = (category['category'] ?? category['name'] ?? 'other').toString();
+            final items = (category['items'] as List<dynamic>? ?? [])
+                .map((item) => MenuItemModel.fromJson(item as Map<String, dynamic>))
+                .toList();
+            grouped[categoryName] = items;
+          }
+        }
+
+        // If flat list (no categories), group by item.category field
+        if (grouped.isEmpty && rawData is List) {
+          for (var item in rawData) {
+            final m = MenuItemModel.fromJson(item as Map<String, dynamic>);
+            grouped.putIfAbsent(m.category, () => []).add(m);
+          }
         }
 
         setState(() {
@@ -115,7 +136,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       final response = await OrderingService.deleteMenuItem(
         token: token!,
@@ -136,7 +157,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
   Future<void> _toggleAvailability(MenuItemModel item) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       final response = await OrderingService.updateMenuItem(
         token: token!,

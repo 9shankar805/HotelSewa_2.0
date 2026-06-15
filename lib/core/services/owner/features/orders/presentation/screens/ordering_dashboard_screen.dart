@@ -50,7 +50,7 @@ class OrderingDashboardScreen extends StatelessWidget {
             subtitle: 'Configure ordering',
             icon: Icons.settings,
             color: Colors.purple,
-            onTap: () => context.push('/owner/settings'),
+            onTap: () => context.push('/settings'),
           ),
         ],
       ),

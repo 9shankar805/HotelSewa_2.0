@@ -53,8 +53,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         _populateFields(data);
       }
 
-      // Then fetch fresh from API
-      final response = await ApiService.get(ApiConfig.getOwnerEndpoint, token: token);
+      // Then fetch fresh from API — use updateProfileEndpoint GET for customer profile
+      final response = await ApiService.get(ApiConfig.updateProfileEndpoint, token: token);
       if (response['success'] == true) {
         final raw = response['data'];
         final data = raw is Map ? (raw.containsKey('owner') ? raw['owner'] : raw) : {};

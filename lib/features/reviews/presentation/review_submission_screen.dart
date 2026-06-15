@@ -60,16 +60,19 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
       if (result['success'] && mounted) {
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Success'),
-            content: const Text('Thank you for your review! It has been submitted successfully.'),
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Thank You!', style: TextStyle(fontWeight: FontWeight.w700)),
+            content: const Text('Your review has been submitted successfully.'),
             actions: [
-              TextButton(
+              ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  context.go('/main-navigation'); // Return to a safe root
+                  Navigator.of(ctx).pop(); // close dialog only
+                  context.go('/main-navigation'); // safe single navigation to root
                 },
-                child: const Text('OK'),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                child: const Text('OK', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -133,7 +136,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${_hotel['city'] ?? ''}, ${_hotel['state'] ?? ''}',
+                          [_hotel['city'], _hotel['state']].where((v) => v != null && v.toString().isNotEmpty).join(', '),
                           style: const TextStyle(fontSize: 14, color: Color(0xFF666666)),
                         ),
                         if (_booking.isNotEmpty) ...[

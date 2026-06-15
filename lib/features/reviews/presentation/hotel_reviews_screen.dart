@@ -36,7 +36,8 @@ class _HotelReviewsScreenState extends State<HotelReviewsScreen> {
 
   Future<void> _loadReviews() async {
     final hotelId = _hotel['id']?.toString();
-    if (hotelId == null) {
+    if (hotelId == null || hotelId.isEmpty) {
+      // No hotel ID — nothing to load, just stop loading
       setState(() => _loading = false);
       return;
     }

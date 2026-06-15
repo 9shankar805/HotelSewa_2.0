@@ -140,6 +140,9 @@ import '../../features/affiliate/presentation/screens/affiliate_screen.dart';
 import '../../features/pms/presentation/screens/pms_integration_screen.dart';
 import '../../features/long_stay/presentation/screens/long_stay_rates_screen.dart';
 import '../../features/post_stay/presentation/screens/post_stay_screen.dart';
+import '../../features/post_stay/presentation/screens/post_stay_survey_screen.dart';
+import '../../features/about/presentation/guest_protection_screen.dart';
+import '../../features/support/presentation/screens/guest_complaint_screen.dart';
 import '../../features/search/presentation/nlp_search_screen.dart';
 import '../../features/events/presentation/screens/event_spaces_screen.dart';
 import '../../features/flash_sales/presentation/screens/flash_sales_screen.dart';
@@ -427,6 +430,22 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/pms-integration', builder: (_, __) => const PmsIntegrationScreen()),
     GoRoute(path: '/long-stay-rates', builder: (_, __) => const LongStayRatesScreen()),
     GoRoute(path: '/post-stay', builder: (_, __) => const PostStayScreen()),
+    // ── Brand Trust Routes ─────────────────────────────────────────────────
+    GoRoute(path: '/guest-protection', builder: (_, __) => const GuestProtectionScreen()),
+    GoRoute(path: '/raise-complaint', builder: (_, s) {
+      final args = s.extra as Map<String, dynamic>?;
+      return GuestComplaintScreen(
+        bookingId: args?['bookingId'],
+        hotelName: args?['hotelName'],
+      );
+    }),
+    GoRoute(path: '/post-stay-survey', builder: (_, s) {
+      final args = s.extra as Map<String, dynamic>? ?? {};
+      return PostStaySurveyScreen(
+        bookingId: args['bookingId'] ?? '',
+        hotelName: args['hotelName'] ?? 'Hotel',
+      );
+    }),
     GoRoute(path: '/event-spaces', builder: (_, __) => const EventSpacesScreen()),
     GoRoute(path: '/flash-sales', builder: (_, __) => const FlashSalesScreen()),
     GoRoute(path: '/packages', builder: (_, __) => const PackagesScreen()),

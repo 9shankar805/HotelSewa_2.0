@@ -27,7 +27,7 @@ class _OrderAnalyticsScreenState extends State<OrderAnalyticsScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       if (token == null) {
         _showError('Please login first');

@@ -44,11 +44,10 @@ class _InviteEarnScreenState extends State<InviteEarnScreen> {
 
       // Fallback: generate from user data
       if (_referralCode.isEmpty) {
-        final userJson = prefs.getString('user');
-        if (userJson != null) {
-          final name = prefs.getString('userName') ?? 'USER';
-          _referralCode = 'HS${name.toUpperCase().replaceAll(' ', '').substring(0, name.length.clamp(0, 4))}${DateTime.now().year}';
-        }
+        final name = prefs.getString('userName') ?? '';
+        final safeName = name.toUpperCase().replaceAll(' ', '');
+        final prefix = safeName.isNotEmpty ? safeName.substring(0, safeName.length.clamp(0, 4)) : 'USER';
+        _referralCode = 'HS$prefix${DateTime.now().year}';
       }
     } catch (_) {}
     setState(() => _loading = false);

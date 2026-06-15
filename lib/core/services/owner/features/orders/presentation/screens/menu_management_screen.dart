@@ -39,7 +39,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       if (token == null) {
         _showError('Please login first');
@@ -115,7 +115,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       final response = await OrderingService.deleteMenuItem(
         token: token!,
@@ -136,7 +136,7 @@ class _MenuManagementScreenState extends State<MenuManagementScreen> {
   Future<void> _toggleAvailability(MenuItemModel item) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       final response = await OrderingService.updateMenuItem(
         token: token!,

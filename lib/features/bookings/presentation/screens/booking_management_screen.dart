@@ -398,7 +398,7 @@ class _BookingManagementScreenState extends State<BookingManagementScreen>
           _buildInfoRow('Room', booking.roomNumber),
           _buildInfoRow('Check-in', _formatDate(booking.checkIn)),
           _buildInfoRow('Check-out', _formatDate(booking.checkOut)),
-          _buildInfoRow('Amount', 'â‚¹${booking.amount.toStringAsFixed(0)}'),
+          _buildInfoRow('Amount', 'NPR ${booking.amount.toStringAsFixed(0)}'),
           _buildInfoRow('Status', booking.status),
           
           const Spacer(),

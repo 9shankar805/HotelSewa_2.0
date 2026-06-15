@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/constants/api_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/shared/api_service.dart';
 
@@ -51,7 +52,7 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('authToken');
       final response = await ApiService.post(
-        '/update-profile',
+        ApiConfig.updateProfileEndpoint,
         token: token,
         data: {
           'current_password': _currentPwController.text,

@@ -827,6 +827,9 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                 ),
               ),
             ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
+            const SizedBox(height: 12),
+            // ── HotelSewa Trust Badge ─────────────────────────────────
+            _buildTrustBadge(),
             const SizedBox(height: 20),
             // Enhanced Check-in / Check-out card
             Container(
@@ -1007,6 +1010,38 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
         const SizedBox(height: 2),
         Text(time, style: const TextStyle(color: AppColors.darkGray, fontWeight: FontWeight.w700, fontSize: 13)),
       ],
+    );
+  }
+
+  /// HotelSewa trust badge — verified, secure booking assurance strip.
+  Widget _buildTrustBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.successLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.success.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(color: AppColors.success.withOpacity(0.15), shape: BoxShape.circle),
+            child: const Icon(Icons.verified_rounded, color: AppColors.success, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('HotelSewa Verified', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.success)),
+                Text('Secure booking · Instant confirmation · Best price', style: TextStyle(fontSize: 11, color: AppColors.gray)),
+              ],
+            ),
+          ),
+          const Icon(Icons.shield_rounded, color: AppColors.success, size: 18),
+        ],
+      ),
     );
   }
 

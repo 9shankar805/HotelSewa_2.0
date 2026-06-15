@@ -261,8 +261,8 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(review['guestName'] as String, style: Theme.of(context).textTheme.titleSmall),
-                    Text(review['roomType'] as String, style: Theme.of(context).textTheme.bodySmall),
+                    Text(review['guestName']?.toString() ?? 'Guest', style: Theme.of(context).textTheme.titleSmall),
+                    Text(review['roomType']?.toString() ?? '', style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ),
               ),
@@ -271,13 +271,13 @@ class _ReviewsScreenState extends State<ReviewsScreen> with SingleTickerProvider
                 children: [
                   _buildStars(rating, size: 13),
                   const SizedBox(height: 2),
-                  Text(review['date'] as String, style: Theme.of(context).textTheme.labelSmall),
+                  Text(review['date']?.toString() ?? '', style: Theme.of(context).textTheme.labelSmall),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text(review['comment'] as String, style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5)),
+          Text(review['comment']?.toString() ?? '', style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5)),
           const SizedBox(height: 12),
           Row(
             children: [

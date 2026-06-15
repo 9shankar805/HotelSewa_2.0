@@ -39,7 +39,7 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       if (token == null) {
         _showError('Please login first');
@@ -300,7 +300,7 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
   Future<void> _updateStatus(int orderId, String newStatus) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      final token = prefs.getString('authToken') ?? prefs.getString('auth_token');
 
       final response = await OrderingService.updateOrderStatus(
         token: token!,

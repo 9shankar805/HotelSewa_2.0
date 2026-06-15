@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/api_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/shared/api_service.dart';
+import '../../../core/services/qr_checkin_service.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final Map<String, dynamic>? arguments;
@@ -17,6 +20,9 @@ class BookingDetailScreen extends StatefulWidget {
 class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Map<String, dynamic> _booking = {};
   bool _loading = true;
+  String? _qrToken;        // from API
+  bool _qrLoading = false;
+  bool _qrExpanded = false;
 
   @override
   void initState() {
@@ -50,6 +56,29 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       } catch (_) {}
     }
     if (mounted && _loading) setState(() => _loading = false);
+  }
+
+  Future<void> _fetchQr(String bookingId) async {
+    if (_qrToken != null || _qrLoading) return;
+    setState(() => _qrLoading = true);
+    try {
+      final result = await QrCheckinService().getCheckinQr(bookingId);
+      if (mounted) {
+        final data = result['data'];
+        String token = '';
+        if (data is Map) {
+          token = data['qr_token']?.toString() ?? data['token']?.toString() ?? data['qr_code']?.toString() ?? '';
+        } else if (data is String) {
+          token = data;
+        }
+        setState(() {
+          _qrToken = token.isNotEmpty ? token : bookingId;
+          _qrLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() { _qrToken = bookingId; _qrLoading = false; });
+    }
   }
 
   @override
@@ -92,6 +121,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             const SizedBox(height: 16),
             _buildPolicies(booking).animate().fadeIn(delay: 320.ms).slideY(begin: 0.1),
             const SizedBox(height: 16),
+            if (status == 'confirmed' || status == 'pending')
+              _buildQrSection(booking).animate().fadeIn(delay: 380.ms).slideY(begin: 0.1),
+            if (status == 'confirmed' || status == 'pending') const SizedBox(height: 16),
             if (status == 'confirmed') _buildActions(context, booking),
             if (status == 'completed') _buildPostStayActions(context, booking),
             const SizedBox(height: 24),
@@ -170,7 +202,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 Row(children: [
                   const Icon(Icons.location_on_rounded, size: 13, color: AppColors.primary),
                   const SizedBox(width: 3),
-                  Expanded(child: Text(booking['location'] ?? 'Mumbai, Maharashtra',
+                  Expanded(child: Text(booking['location'] ?? 'Kathmandu, Nepal',
                       style: const TextStyle(fontSize: 12, color: AppColors.gray), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ]),
                 const SizedBox(height: 4),
@@ -250,12 +282,12 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       title: 'Price Breakdown',
       child: Column(
         children: [
-          _priceRow('Room charges', '₹$roomCharge'),
+          _priceRow('Room charges', 'NPR $roomCharge'),
           const SizedBox(height: 10),
-          _priceRow('Taxes & fees (18%)', '₹$taxes'),
+          _priceRow('Taxes & fees (18%)', 'NPR $taxes'),
           if (discount > 0) ...[
             const SizedBox(height: 10),
-            _priceRow('Discount', '-₹$discount', valueColor: AppColors.success),
+            _priceRow('Discount', '-NPR $discount', valueColor: AppColors.success),
           ],
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
@@ -265,7 +297,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Total Paid', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.darkGray)),
-              Text('₹$total', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
+              Text('NPR $total', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary)),
             ],
           ),
           const SizedBox(height: 8),
@@ -422,6 +454,250 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
+  // ── QR Check-in Section ──────────────────────────────────────────────────
+  Widget _buildQrSection(Map<String, dynamic> booking) {
+    final bookingId = booking['id']?.toString()
+        ?? booking['bookingId']?.toString()
+        ?? booking['booking_id']?.toString()
+        ?? '';
+    final hotelName   = booking['hotelName']?.toString() ?? booking['hotel_name']?.toString() ?? 'Hotel';
+    final roomType    = booking['roomType']?.toString() ?? booking['room_type']?.toString() ?? 'Room';
+    final checkIn     = booking['checkIn']?.toString() ?? booking['check_in_date']?.toString() ?? '';
+    final checkOut    = booking['checkOut']?.toString() ?? booking['check_out_date']?.toString() ?? '';
+    final guestName   = booking['guestName']?.toString() ?? booking['guest_name']?.toString() ?? '';
+    final confirmNum  = booking['confirmationNumber']?.toString() ?? booking['confirmation_number']?.toString() ?? bookingId;
+    final amount      = (booking['totalAmount'] ?? booking['total_amount'] ?? 0).toString();
+
+    // Build QR payload
+    final qrPayload = _qrToken ?? jsonEncode({
+      'app': 'HotelSewa',
+      'booking_id': bookingId,
+      'confirmation': confirmNum,
+      'hotel': hotelName,
+      'room': roomType,
+      'guest': guestName,
+      'check_in': checkIn,
+      'check_out': checkOut,
+      'amount': 'NPR $amount',
+    });
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppColors.cardShadow,
+      ),
+      child: Column(
+        children: [
+          // ── Header (tappable to expand/collapse) ─────────────────────
+          InkWell(
+            onTap: () {
+              setState(() => _qrExpanded = !_qrExpanded);
+              if (!_qrExpanded && bookingId.isNotEmpty) _fetchQr(bookingId);
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42, height: 42,
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.qr_code_rounded, color: Colors.white, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Check-in QR Code', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.darkGray)),
+                        Text('Show this at hotel reception', style: TextStyle(fontSize: 12, color: AppColors.gray)),
+                      ],
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _qrExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 250),
+                    child: const Icon(Icons.keyboard_arrow_down_rounded, size: 22, color: AppColors.gray),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Expandable QR Body ────────────────────────────────────────
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 300),
+            crossFadeState: _qrExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Column(
+              children: [
+                // Perforated divider
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: List.generate(36, (i) => Expanded(
+                      child: Container(
+                        height: 1.5,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        color: i.isEven ? AppColors.lightGray : Colors.transparent,
+                      ),
+                    )),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // QR code + branding
+                _qrLoading
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.lightGray, width: 1.5),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
+                          ),
+                          child: Column(
+                            children: [
+                              // QR with center logo
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  QrImageView(
+                                    data: qrPayload,
+                                    version: QrVersions.auto,
+                                    size: 190,
+                                    backgroundColor: Colors.white,
+                                    eyeStyle: const QrEyeStyle(
+                                      eyeShape: QrEyeShape.square,
+                                      color: AppColors.darkGray,
+                                    ),
+                                    dataModuleStyle: const QrDataModuleStyle(
+                                      dataModuleShape: QrDataModuleShape.square,
+                                      color: AppColors.darkGray,
+                                    ),
+                                    errorCorrectionLevel: QrErrorCorrectLevel.H,
+                                  ),
+                                  // Center HS logo
+                                  Container(
+                                    width: 42, height: 42,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6)],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        color: AppColors.primary,
+                                        child: const Center(
+                                          child: Text('HS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: -0.5)),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Booking ID chip (tap to copy)
+                              GestureDetector(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: confirmNum));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Booking ID copied'), duration: Duration(seconds: 2), behavior: SnackBarBehavior.floating),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8F9FF),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppColors.lightGray),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.confirmation_number_outlined, size: 15, color: AppColors.primary),
+                                      const SizedBox(width: 8),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('BOOKING ID', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: AppColors.gray, letterSpacing: 1)),
+                                          Text(confirmNum, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.darkGray, letterSpacing: 0.5)),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 10),
+                                      const Icon(Icons.copy_rounded, size: 14, color: AppColors.gray),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                // Info row: check-in / check-out
+                if (checkIn.isNotEmpty || checkOut.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.lightGray),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(child: _qrDateBlock('CHECK-IN', checkIn, AppColors.success)),
+                          Container(width: 1, height: 40, color: AppColors.lightGray),
+                          Expanded(child: _qrDateBlock('CHECK-OUT', checkOut, AppColors.error)),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // Validity note
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.verified_rounded, size: 13, color: AppColors.success),
+                      const SizedBox(width: 5),
+                      const Text('Valid for check-in on arrival date only',
+                          style: TextStyle(fontSize: 11, color: AppColors.gray, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _qrDateBlock(String label, String date, Color color) {
+    return Column(children: [
+      Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.gray, letterSpacing: 1)),
+      const SizedBox(height: 4),
+      Text(date, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color), textAlign: TextAlign.center),
+    ]);
+  }
+
   // Helpers
   Widget _card({String? title, required Widget child}) {
     return Container(
@@ -555,3 +831,4 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   };
   
 }
+

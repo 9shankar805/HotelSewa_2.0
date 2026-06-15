@@ -16,7 +16,7 @@ class _HotelCreationScreenState extends State<HotelCreationScreen> {
   final _addressController = TextEditingController();
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
-  final _countryController = TextEditingController(text: 'India');
+  final _countryController = TextEditingController(text: 'Nepal');
   final _pincodeController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
@@ -417,3 +417,4 @@ class _HotelCreationScreenState extends State<HotelCreationScreen> {
     );
   }
 }
+

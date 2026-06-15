@@ -27,17 +27,21 @@ class ReviewService {
     required int rating,
     required String comment,
     List<String>? images,
+    Map<String, dynamic>? extraData,
   }) async {
     try {
       final token = await _getToken();
-      final response = await ApiService.post(ApiConfig.rateHotelEndpoint, 
-          token: token,
-          data: {
-            'hotel_id': hotelId,
-            'rating': rating,
-            'comment': comment,
-            'images': images ?? [],
-          });
+      final data = <String, dynamic>{
+        'hotel_id': hotelId,
+        'rating': rating,
+        'comment': comment,
+        'images': images ?? [],
+      };
+      // Merge extra fields (category ratings, highlights) if provided
+      if (extraData != null) data.addAll(extraData);
+
+      final response = await ApiService.post(ApiConfig.rateHotelEndpoint,
+          token: token, data: data);
       return response['success'] == true
           ? {'success': true, 'data': response['data']}
           : {'success': false, 'message': response['message'] ?? 'Failed to submit review'};

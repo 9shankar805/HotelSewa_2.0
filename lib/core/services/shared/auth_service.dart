@@ -265,10 +265,14 @@ class AuthService {
 
   // ─── Delete Account ──────────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> deleteAccount() async {
+  Future<Map<String, dynamic>> deleteAccount({String? password}) async {
     try {
       final token = await _getToken();
-      await ApiService.delete(ApiConfig.deleteUserEndpoint, token: token);
+      await ApiService.delete(
+        ApiConfig.deleteUserEndpoint,
+        token: token,
+        data: password != null && password.isNotEmpty ? {'password': password} : null,
+      );
       await logout();
       return {'success': true};
     } catch (e) {

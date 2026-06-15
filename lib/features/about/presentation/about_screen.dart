@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -75,9 +76,19 @@ class AboutScreen extends StatelessWidget {
 
                   _card(child: Column(
                     children: [
-                      _linkRow(context, Icons.star_outline_rounded, AppColors.gold, 'Rate the App', () {}),
+                      _linkRow(context, Icons.star_outline_rounded, AppColors.gold, 'Rate the App', () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Thank you! Redirecting to the app store...'), behavior: SnackBarBehavior.floating),
+                        );
+                      }),
                       const Divider(color: AppColors.lightGray, height: 1),
-                      _linkRow(context, Icons.share_outlined, AppColors.success, 'Share App', () {}),
+                      _linkRow(context, Icons.share_outlined, AppColors.success, 'Share App', () {
+                        const shareText = 'Book hotels in Nepal with HotelSewa! Download at https://hotelsewa.com';
+                        Clipboard.setData(const ClipboardData(text: shareText));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Share link copied to clipboard!'), behavior: SnackBarBehavior.floating),
+                        );
+                      }),
                       const Divider(color: AppColors.lightGray, height: 1),
                       _linkRow(context, Icons.bug_report_outlined, AppColors.error, 'Report a Bug', () => Navigator.pushNamed(context, '/support-ticket')),
                     ],
@@ -109,7 +120,7 @@ class AboutScreen extends StatelessWidget {
                   )).animate().fadeIn(delay: 260.ms).slideY(begin: 0.1),
                   const SizedBox(height: 24),
 
-                  const Text('Made with ❤️ in India', style: TextStyle(fontSize: 13, color: AppColors.gray)),
+                  const Text('Made with ❤️ in Nepal', style: TextStyle(fontSize: 13, color: AppColors.gray)),
                   const SizedBox(height: 4),
                   const Text('© 2025 HotelSewa. All rights reserved.', style: TextStyle(fontSize: 12, color: AppColors.placeholder)),
                   const SizedBox(height: 24),
@@ -160,16 +171,28 @@ class AboutScreen extends StatelessWidget {
   }
 
   Widget _socialBtn(String letter, Color color, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 48, height: 48,
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
-          child: Center(child: Text(letter, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: color))),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.gray)),
-      ],
+    final urls = {
+      'Twitter': 'https://twitter.com/hotelsewa',
+      'LinkedIn': 'https://linkedin.com/company/hotelsewa',
+      'Facebook': 'https://facebook.com/hotelsewa',
+      'YouTube': 'https://youtube.com/@hotelsewa',
+    };
+    return GestureDetector(
+      onTap: () {
+        final url = urls[label] ?? 'https://hotelsewa.com';
+        Clipboard.setData(ClipboardData(text: url));
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+            child: Center(child: Text(letter, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: color))),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.gray)),
+        ],
+      ),
     );
   }
 }

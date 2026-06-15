@@ -64,6 +64,8 @@ import '../../features/settings/presentation/accessibility_settings_screen.dart'
 import '../../features/invite/presentation/referral_history_screen.dart';
 import '../../features/payment_methods/presentation/add_upi_screen.dart';
 import '../../features/trips/presentation/my_trips_screen.dart';
+import '../../features/saved/presentation/saved_screen.dart';
+import '../../features/invite/presentation/invite_earn_screen.dart';
 import 'main_navigation.dart';
 import 'owner_navigation.dart';
 // Hotel Owner Screens
@@ -336,6 +338,8 @@ class AppRoutes {
       referralHistory: (context) => const ReferralHistoryScreen(),
       addUpi: (context) => const AddUpiScreen(),
       myTrips: (context) => const MyTripsScreen(),
+      saved: (context) => const SavedScreen(),
+      inviteEarn: (context) => const InviteEarnScreen(),
       
       // Hotel Owner Routes
       ownerDashboard: (context) => const OwnerNavigation(),

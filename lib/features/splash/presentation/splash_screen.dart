@@ -164,13 +164,51 @@ class _SplashScreenState extends State<SplashScreen>
                         },
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        'India\'s Largest Hotel Network',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.white.withOpacity(0.9),
-                        ),
-                        textAlign: TextAlign.center,
+                      // Stylish tagline with accent line
+                      Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 24, height: 1.5,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(1),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'N E P A L',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white.withOpacity(0.7),
+                                  letterSpacing: 5,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                width: 24, height: 1.5,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(1),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'No. 1 Hotel Booking Platform',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.white.withOpacity(0.95),
+                              letterSpacing: 0.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -186,7 +224,7 @@ class _SplashScreenState extends State<SplashScreen>
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: Text(
-                  'Version 1.0.0',
+                  'Version 1.0.1',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.white.withOpacity(0.7),

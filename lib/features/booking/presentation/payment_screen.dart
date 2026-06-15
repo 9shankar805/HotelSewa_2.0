@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/services/owner/payment_service.dart';
 import '../../../core/services/booking_service.dart';
 import '../../../core/navigation/app_routes.dart';
 import 'booking_success_screen.dart';
@@ -48,18 +48,98 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     setState(() => _processing = true);
 
-    // Simulate payment processing
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken');
 
-    setState(() => _processing = false);
+      // Build booking payload
+      final bookingData = <String, dynamic>{
+        'hotel_id': _hotel['id']?.toString() ?? _hotel['hotel_id']?.toString() ?? '',
+        'room_type_id': _room['id']?.toString() ?? _room['room_type_id']?.toString() ?? '',
+        'check_in_date': _dates['checkIn'] ?? _dates['check_in'] ?? '',
+        'check_out_date': _dates['checkOut'] ?? _dates['check_out'] ?? '',
+        'adults': _dates['adults'] ?? _dates['guests'] ?? 1,
+        'children': _dates['children'] ?? 0,
+        'room_count': _dates['rooms'] ?? 1,
+        'payment_method': _selectedMethod,
+        'total_amount': _totalAmount,
+        'status': 'confirmed',
+      };
 
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const BookingSuccessScreen()),
-        (route) => false,
-      );
+      // Add guest info if available
+      final guest = widget.arguments?['guestDetails'];
+      if (guest != null) {
+        bookingData['guest_name'] = '${guest['firstName'] ?? ''} ${guest['lastName'] ?? ''}'.trim();
+        bookingData['guest_email'] = guest['email'] ?? '';
+        bookingData['guest_phone'] = guest['phone'] ?? '';
+        bookingData['special_requests'] = guest['specialRequests'] ?? '';
+      }
+
+      // Call the actual booking API
+      final bookingService = BookingService();
+      final result = await bookingService.createBooking(bookingData);
+
+      if (!mounted) return;
+      setState(() => _processing = false);
+
+      if (result['success'] == true) {
+        // Extract booking response data
+        final responseData = result['data'] ?? {};
+        final raw = responseData is Map ? responseData : {};
+
+        // Build arguments for success screen — cover all possible API field names
+        final successArgs = <String, dynamic>{
+          'booking_id':          raw['booking_id']?.toString() ?? raw['id']?.toString() ?? '',
+          'confirmation_number': raw['confirmation_number']?.toString() ?? raw['confirmationNumber']?.toString() ?? '',
+          'hotel_name':          _hotel['name']?.toString() ?? _hotel['hotel_name']?.toString() ?? 'Hotel',
+          'room_type':           _room['type']?.toString() ?? _room['name']?.toString() ?? _room['room_type']?.toString() ?? 'Room',
+          'check_in':            _dates['checkIn'] ?? _dates['check_in'] ?? raw['check_in_date'] ?? '',
+          'check_out':           _dates['checkOut'] ?? _dates['check_out'] ?? raw['check_out_date'] ?? '',
+          'nights':              _dates['nights']?.toString() ?? raw['nights']?.toString() ?? '1',
+          'guests':              (_dates['adults'] ?? 1).toString(),
+          'total_amount':        _totalAmount.toString(),
+          'payment_method':      _selectedMethod,
+          'guest_name':          guest?['firstName'] != null
+              ? '${guest['firstName']} ${guest['lastName'] ?? ''}'.trim()
+              : (prefs.getString('userName') ?? 'Guest'),
+        };
+
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BookingSuccessScreen(arguments: successArgs),
+            ),
+            (route) => false,
+          );
+        }
+      } else {
+        // Show error
+        final msg = result['message'] ?? 'Payment failed. Please try again.';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(msg),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _processing = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Payment failed. Please check your connection.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
     }
+  }
+
+  int get _totalAmount {
+    final price = (_room['price'] as num?)?.toInt() ?? (_room['base_price'] as num?)?.toInt() ?? 0;
+    final nights = (_dates['nights'] as num?)?.toInt() ?? 1;
+    return ((price * nights) * 1.18).round();
   }
 
   @override
@@ -73,8 +153,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final amount = (_room['price'] ?? 0) * (_dates['nights'] ?? 0);
-    final total = (amount * 1.18).round();
+    final total = _totalAmount;
 
     return Scaffold(
       backgroundColor: AppColors.background,

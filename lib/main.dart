@@ -109,7 +109,7 @@ class _MyAppState extends State<MyApp> {
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.system, // Respects device dark/light setting
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
           child: child!,
         ),
       ),
@@ -126,6 +126,6 @@ class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (_, __, ___) => true;
+      ..badCertificateCallback = (cert, host, port) => true;
   }
 }

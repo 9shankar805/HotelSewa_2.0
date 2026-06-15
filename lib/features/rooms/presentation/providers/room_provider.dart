@@ -127,7 +127,9 @@ class RoomProvider extends ChangeNotifier {
       // Get hotelId from storage or context
       // For now, we need to pass it when calling this method
       if (room.hotelId == null || room.hotelId!.isEmpty) {
-        throw Exception('Hotel ID is required to create a room');
+        _setError('Hotel ID is required. Please ensure you are logged in as a hotel owner.');
+        _setLoading(false);
+        return;
       }
 
       final roomData = await _roomService.createRoom(room.toJson());
@@ -139,7 +141,6 @@ class RoomProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _setError('Failed to create room: ${e.toString()}');
-      rethrow;
     } finally {
       _setLoading(false);
     }

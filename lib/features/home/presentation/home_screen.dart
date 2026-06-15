@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(child: _toggle()),
               SliverToBoxAdapter(child: _search()),
               SliverToBoxAdapter(child: _chips()),
-              SliverToBoxAdapter(child: _tripSection()),
+              if (_trip != null) SliverToBoxAdapter(child: _tripSection()),
               if (_recent.isNotEmpty) SliverToBoxAdapter(child: _recentSection()),
               SliverToBoxAdapter(child: _actions()),
               if (_offers.isNotEmpty) SliverToBoxAdapter(child: _offersSection()),
@@ -265,58 +265,85 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── Nightly / Hourly toggle ──────────────────────────────────────────────
   Widget _toggle() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      height: 52,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30), // fully pill-shaped outer
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 2))],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Row(children: [
-          // Nightly wider (58%) — matches screenshot red fill
-          Expanded(flex: 58, child: _pill('Nightly', _BType.nightly)),
-          // Hourly narrower (42%) — just text + NEW badge
-          Expanded(flex: 42, child: _pill('Hourly', _BType.hourly, badge: 'NEW')),
-        ]),
-      ),
-    );
-  }
+    final isNightly = _bType == _BType.nightly;
+    return LayoutBuilder(builder: (ctx, constraints) {
+      final totalW = constraints.maxWidth - 32; // account for 16px margins
+      final nightlyW = totalW * 0.57; // 57% for Nightly pill
+      final hourlyW  = totalW * 0.43; // 43% for Hourly pill
 
-  Widget _pill(String label, _BType t, {String? badge}) {
-    final on = _bType == t;
-    return GestureDetector(
-      onTap: () { setState(() => _bType = t); if (t == _BType.hourly) context.push('/search'); },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      return Container(
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        height: 52,
         decoration: BoxDecoration(
-          color: on ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(26), // fully rounded pill
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 2))],
         ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(label,
-              style: TextStyle(
-                fontSize: 15, fontWeight: FontWeight.w700,
-                color: on ? Colors.white : const Color(0xFF9CA3AF),
-              )),
-          if (badge != null) ...[
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        child: Stack(children: [
+          // ── Sliding red pill pinned to LEFT ──────────────────────────
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            top: 4, bottom: 4,
+            left: isNightly ? 4 : nightlyW + 4,
+            width: isNightly ? nightlyW : hourlyW,
+            child: Container(
               decoration: BoxDecoration(
-                // Always red — visible even when Hourly is inactive
                 color: AppColors.primary,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(26),
               ),
-              child: const Text('NEW',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
             ),
-          ],
+          ),
+          // ── Tap areas + labels ────────────────────────────────────────
+          Row(children: [
+            // Nightly
+            SizedBox(
+              width: nightlyW + 8,
+              child: GestureDetector(
+                onTap: () => setState(() => _bType = _BType.nightly),
+                behavior: HitTestBehavior.opaque,
+                child: Center(
+                  child: Text('Nightly',
+                      style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700,
+                        color: isNightly ? Colors.white : const Color(0xFF9CA3AF),
+                      )),
+                ),
+              ),
+            ),
+            // Hourly
+            Expanded(
+              child: GestureDetector(
+                onTap: () { setState(() => _bType = _BType.hourly); context.push('/search'); },
+                behavior: HitTestBehavior.opaque,
+                child: Center(
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text('Hourly',
+                        style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700,
+                          color: !isNightly ? Colors.white : const Color(0xFF9CA3AF),
+                        )),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: !isNightly ? Colors.white.withOpacity(0.25) : AppColors.primary,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('NEW',
+                          style: TextStyle(
+                            fontSize: 9, fontWeight: FontWeight.w900,
+                            color: !isNightly ? Colors.white : Colors.white,
+                          )),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          ]),
         ]),
-      ),
-    );
+      );
+    });
   }
 
   // ─── Search ───────────────────────────────────────────────────────────────
@@ -347,21 +374,33 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── Chips ───────────────────────────────────────────────────────────────
   Widget _chips() {
     final items = [
-      (Icons.near_me_rounded,'Near Me','/near-me'),
-      (Icons.history_rounded,'Recent','/search'),
-      (Icons.map_rounded,'Map','/map-search')
+      (Icons.near_me_rounded, 'Near Me', '/near-me'),
+      (Icons.history_rounded,  'Recent',  '/search'),
+      (Icons.map_rounded,      'Map',     '/map-search'),
     ];
-    return Padding(padding:const EdgeInsets.fromLTRB(16,16,16,0),
-      child:Row(children:items.map((c)=>Expanded(child:Padding(padding:const EdgeInsets.only(right:10),
-        child:GestureDetector(onTap:()=>context.push(c.$3),
-          child:Container(padding:const EdgeInsets.symmetric(vertical:10),
-            decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(12),boxShadow:[BoxShadow(color:Colors.black.withOpacity(0.03),blurRadius:10)]),
-            child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[
-              Icon(c.$1,size:16,color:AppColors.primary),
-              const SizedBox(width:8),
-              Text(c.$2,style:const TextStyle(fontSize:13,fontWeight:FontWeight.w700,color:Color(0xFF1A1A2E)))
-            ]))
-        )))).toList()));
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: Row(children: items.map((c) => Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: GestureDetector(
+          onTap: () => context.push(c.$3),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8)],
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(c.$1, size: 15, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(c.$2, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1A2E))),
+            ]),
+          ),
+        ),
+      )).toList()),
+    );
   }
 
   // ─── Upcoming Trip ────────────────────────────────────────────────────────
@@ -392,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Padding(padding:const EdgeInsets.fromLTRB(16,24,16,12),child:Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[
         const Text('Pick up where you left off',style:TextStyle(fontSize:17,fontWeight:FontWeight.w800,color:Color(0xFF1A1A2E))),
-        GestureDetector(onTap:_clearRecent,child:const Text('Clear',style:TextStyle(fontSize:13,color:Color(0xFF9CA3AF),fontWeight:FontWeight.w600))),
+        GestureDetector(onTap:_clearRecent,child:const Text('Clear',style:TextStyle(fontSize:13,color:AppColors.primary,fontWeight:FontWeight.w600))),
       ])),
       SizedBox(height:85,child:ListView.builder(scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:16),itemCount:_recent.length,itemBuilder:(_,i){
         final s=_recent[i];
@@ -507,7 +546,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Stack(children:[
             ClipRRect(borderRadius:const BorderRadius.vertical(top:Radius.circular(24)),child:Image.network(h['image']!,width:double.infinity,height:210,fit:BoxFit.cover)),
-            Positioned(top:12,left:12,child:Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:5),decoration:BoxDecoration(color:AppColors.primary,borderRadius:BorderRadius.circular(8)),child:const Text('20% OFF',style:TextStyle(color:Colors.white,fontSize:11,fontWeight:FontWeight.w900)))),
+            Positioned(top:12,left:12,child:Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:5),decoration:BoxDecoration(color:AppColors.primary,borderRadius:BorderRadius.circular(8)),child:Text('${h['discount']>0 ? h['discount'] : 20}% OFF',style:const TextStyle(color:Colors.white,fontSize:11,fontWeight:FontWeight.w900)))),
             Positioned(top:12,right:12,child:Container(width:36,height:36,decoration:const BoxDecoration(color:Colors.white,shape:BoxShape.circle),child:const Icon(Icons.favorite_border_rounded,size:18,color:AppColors.primary))),
             Positioned(bottom:12,right:12,child:Container(padding:const EdgeInsets.fromLTRB(8,8,12,8),decoration:BoxDecoration(color:Colors.white,borderRadius:BorderRadius.circular(30)),child:Row(mainAxisSize:MainAxisSize.min,children:[
               Container(width:40,height:40,decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:const Color(0xFFF7F8FA),width:1.5)),child:ClipOval(child:Image.asset('assets/images/chatbot.png',fit:BoxFit.cover))),
@@ -515,7 +554,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
                 Container(padding:const EdgeInsets.symmetric(horizontal:6,vertical:2),decoration:BoxDecoration(color:AppColors.primary,borderRadius:BorderRadius.circular(4)),child:const Text('HotelSewa',style:TextStyle(color:Colors.white,fontSize:9,fontWeight:FontWeight.w900))),
                 const SizedBox(height:2),
-                Row(textBaseline:TextBaseline.alphabetic,crossAxisAlignment:CrossAxisAlignment.baseline,children:[Text('₹${h['price']}',style:const TextStyle(fontSize:17,fontWeight:FontWeight.w900,color:Color(0xFF1A1A2E))),const Text('/night',style:TextStyle(fontSize:11,color:Color(0xFF9CA3AF),fontWeight:FontWeight.w600))]),
+                Row(textBaseline:TextBaseline.alphabetic,crossAxisAlignment:CrossAxisAlignment.baseline,children:[Text('NPR ${h['price']}',style:const TextStyle(fontSize:17,fontWeight:FontWeight.w900,color:Color(0xFF1A1A2E))),const Text('/night',style:TextStyle(fontSize:11,color:Color(0xFF9CA3AF),fontWeight:FontWeight.w600))]),
               ]),
             ]))),
             Positioned(bottom:12,left:12,child:Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:6),decoration:BoxDecoration(color:Colors.black.withOpacity(0.6),borderRadius:BorderRadius.circular(20)),child:const Row(children:[Icon(Icons.trending_up_rounded,size:12,color:Color(0xFF22C55E)),SizedBox(width:6),Text('5 people booked this today',style:TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.w700))]))),
