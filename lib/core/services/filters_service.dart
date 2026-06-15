@@ -26,24 +26,39 @@ class FiltersService {
     }
   }
 
-  // GET /filters/search - Search filters
+  // GET /filters/search - Search with filters (backend fixed: POST was 405, use GET)
   Future<Map<String, dynamic>> getSearchFilters({
     String? query,
     String? location,
     String? category,
+    String? checkIn,
+    String? checkOut,
+    int? minPrice,
+    int? maxPrice,
+    double? minRating,
+    List<String>? amenities,
   }) async {
     try {
       final queryParams = <String, String>{};
       if (query != null) queryParams['query'] = query;
       if (location != null) queryParams['location'] = location;
       if (category != null) queryParams['category'] = category;
-      
-      final response = await ApiService.get(ApiConfig.filtersSearchEndpoint, queryParams: queryParams.isNotEmpty ? queryParams : null);
-      return response['success'] == true
-          ? {'success': true, 'filters': response['data']}
-          : {'success': false, 'message': response['message'] ?? 'Failed to load search filters'};
+      if (checkIn != null) queryParams['check_in'] = checkIn;
+      if (checkOut != null) queryParams['check_out'] = checkOut;
+      if (minPrice != null) queryParams['min_price'] = minPrice.toString();
+      if (maxPrice != null) queryParams['max_price'] = maxPrice.toString();
+      if (minRating != null) queryParams['min_rating'] = minRating.toString();
+      if (amenities != null && amenities.isNotEmpty) queryParams['amenities'] = amenities.join(',');
+
+      final response = await ApiService.get(
+        ApiConfig.filtersSearchEndpoint,
+        queryParams: queryParams.isNotEmpty ? queryParams : null,
+      );
+      return response['success'] == true || response['error'] == false
+          ? {'success': true, 'results': response['data']}
+          : {'success': false, 'message': response['message'] ?? 'Search failed'};
     } catch (e) {
-      return {'success': false, 'message': 'Failed to load search filters'};
+      return {'success': false, 'message': 'Search failed'};
     }
   }
 

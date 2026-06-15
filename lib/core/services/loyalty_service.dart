@@ -57,8 +57,7 @@ class LoyaltyService {
   }) async {
     try {
       final token = await _getToken();
-      final queryParams = <String, String>{};
-      if (page != null) queryParams['page'] = page.toString();
+      final queryParams = <String, String>{};      if (page != null) queryParams['page'] = page.toString();
       if (limit != null) queryParams['limit'] = limit.toString();
       if (type != null) queryParams['type'] = type;
       
@@ -88,7 +87,7 @@ class LoyaltyService {
             'redeem_type': redeemType,
             if (bookingId != null) 'booking_id': bookingId,
           });
-      return response['success'] == true
+      return response['success'] == true || response['error'] == false
           ? {'success': true, 'redemption': response['data']}
           : {'success': false, 'message': response['message'] ?? 'Failed to redeem points'};
     } catch (e) {
@@ -96,11 +95,12 @@ class LoyaltyService {
     }
   }
 
-  // Get loyalty program details
+  // Get loyalty program details — requires auth (backend fixed: was 404)
   Future<Map<String, dynamic>> getLoyaltyProgram() async {
     try {
-      final response = await ApiService.get(ApiConfig.loyaltyProgramEndpoint);
-      return response['success'] == true
+      final token = await _getToken();
+      final response = await ApiService.get(ApiConfig.loyaltyProgramEndpoint, token: token);
+      return response['success'] == true || response['error'] == false
           ? {'success': true, 'program': response['data']}
           : {'success': false, 'message': response['message'] ?? 'Failed to load loyalty program'};
     } catch (e) {
@@ -146,11 +146,12 @@ class LoyaltyService {
     }
   }
 
-  // Get available rewards
+  // Get available rewards — requires auth (backend fixed: was 404)
   Future<Map<String, dynamic>> getAvailableRewards() async {
     try {
-      final response = await ApiService.get(ApiConfig.loyaltyRewardsEndpoint);
-      return response['success'] == true
+      final token = await _getToken();
+      final response = await ApiService.get(ApiConfig.loyaltyRewardsEndpoint, token: token);
+      return response['success'] == true || response['error'] == false
           ? {'success': true, 'rewards': response['data']}
           : {'success': false, 'message': response['message'] ?? 'Failed to load available rewards'};
     } catch (e) {

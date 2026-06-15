@@ -1,0 +1,152 @@
+{
+  "info": {
+    "name": "HotelSewa API",
+    "_postman_id": "hotelsewa-api-collection",
+    "description": "Complete API collection for HotelSewa. Base URL: http://209.50.241.46:2000/api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://209.50.241.46:2000/api" },
+    { "key": "token", "value": "YOUR_AUTH_TOKEN_HERE" }
+  ],
+  "item": [
+    {
+      "name": "✅ AUTH",
+      "item": [
+        { "name": "Get OTP", "request": { "method": "GET", "url": "{{base_url}}/get-otp?mobile=9800000000" } },
+        { "name": "Verify OTP", "request": { "method": "GET", "url": "{{base_url}}/verify-otp?mobile=9800000000&otp=1234" } },
+        { "name": "User Signup / Login", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/user-signup", "body": { "mode": "raw", "raw": "{\"email\":\"test@test.com\",\"password\":\"password\",\"type\":\"email\",\"role\":\"customer\"}" } } },
+        { "name": "Logout", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/logout" } },
+        { "name": "Forgot Password", "request": { "method": "GET", "url": "{{base_url}}/forgot-password?mobile=9800000000" } }
+      ]
+    },
+    {
+      "name": "✅ HOTELS - PUBLIC",
+      "item": [
+        { "name": "List All Hotels", "request": { "method": "GET", "url": "{{base_url}}/hotels" } },
+        { "name": "Hotel Details", "request": { "method": "GET", "url": "{{base_url}}/hotel-details/1" } },
+        { "name": "Hotel Policies", "request": { "method": "GET", "url": "{{base_url}}/hotel-policies/1" } },
+        { "name": "Hotels Nearby", "request": { "method": "GET", "url": "{{base_url}}/hotels/nearby?latitude=27.7&longitude=85.3&radius=5" } },
+        { "name": "Compare Hotels", "request": { "method": "GET", "url": "{{base_url}}/hotels/compare?ids=1,2" } },
+        { "name": "Hotel Gallery", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/gallery" } },
+        { "name": "Hotel Videos", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/videos" } },
+        { "name": "Hotel Packages", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/packages" } },
+        { "name": "Hotel Addons", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/addons" } },
+        { "name": "Hotel Menu", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/menu" } },
+        { "name": "Hotel Activities", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/activities" } },
+        { "name": "Hotel Event Spaces", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/event-spaces" } },
+        { "name": "Hotel Long Stay Rates", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/long-stay-rates" } },
+        { "name": "Hotel Blackout Dates", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/blackout-dates" } },
+        { "name": "Hotel Eco Info", "request": { "method": "GET", "url": "{{base_url}}/hotels/1/eco-info" } },
+        { "name": "Recently Viewed (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/hotels/recently-viewed" } }
+      ]
+    },
+    {
+      "name": "❌ BROKEN - Room Types (405)",
+      "item": [
+        { "name": "Room Types [GET returns 405 - BUG]", "request": { "method": "GET", "url": "{{base_url}}/room-types", "description": "SERVER BUG: Returns 405 Method Not Allowed on GET. Expected 200." } },
+        { "name": "Room Type Gallery id=1", "request": { "method": "GET", "url": "{{base_url}}/room-types/1/gallery" } }
+      ]
+    },
+    {
+      "name": "✅ BOOKINGS",
+      "item": [
+        { "name": "My Bookings (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/my-bookings" } },
+        { "name": "Create Booking (auth)", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/create-booking", "body": { "mode": "raw", "raw": "{\"hotel_id\":1,\"room_type_id\":1,\"check_in_date\":\"2026-07-01\",\"check_out_date\":\"2026-07-02\",\"adults\":2,\"children\":0,\"room_count\":1}" } } },
+        { "name": "Cancel Booking (auth)", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/cancel-booking/1" } },
+        { "name": "Booking Detail (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/my-bookings" } },
+        { "name": "Refund Status (auth) [401 without token]", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/bookings/1/refund-status" } },
+        { "name": "Preview Price [405 BUG - POST not allowed]", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/preview-price", "body": { "mode": "raw", "raw": "{\"hotel_id\":1,\"room_type_id\":1,\"check_in_date\":\"2026-07-01\",\"check_out_date\":\"2026-07-02\"}" }, "description": "SERVER BUG: Returns 405 Method Not Allowed. Try GET instead." } },
+        { "name": "Pending Reviews (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/my-pending-reviews" } }
+      ]
+    },
+    {
+      "name": "✅ PAYMENTS",
+      "item": [
+        { "name": "Payment Intent (auth)", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/payment-intent", "body": { "mode": "raw", "raw": "{\"booking_id\":1,\"amount\":5000}" } } },
+        { "name": "Khalti Initiate (auth)", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/payment/khalti/initiate", "body": { "mode": "raw", "raw": "{\"booking_id\":1,\"amount\":5000}" } } },
+        { "name": "eSewa Initiate (auth)", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/payment/esewa/initiate", "body": { "mode": "raw", "raw": "{\"booking_id\":1,\"amount\":5000}" } } },
+        { "name": "Invoice Preview (auth) [401 without token]", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/invoice/1/preview" } },
+        { "name": "Invoice Download (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/invoice/1/download" } },
+        { "name": "Payment Methods (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/payment-methods" } }
+      ]
+    },
+    {
+      "name": "❌ BROKEN - Loyalty (404)",
+      "item": [
+        { "name": "Loyalty Balance (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/loyalty/balance" } },
+        { "name": "Loyalty History [404 BUG]", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/loyalty/history", "description": "SERVER BUG: Returns 404 Not Found. Endpoint does not exist on server." } },
+        { "name": "Loyalty Program [404 BUG]", "request": { "method": "GET", "url": "{{base_url}}/loyalty/program", "description": "SERVER BUG: Returns 404 Not Found." } },
+        { "name": "Loyalty Rewards [404 BUG]", "request": { "method": "GET", "url": "{{base_url}}/loyalty/rewards", "description": "SERVER BUG: Returns 404 Not Found." } },
+        { "name": "Loyalty Tiers", "request": { "method": "GET", "url": "{{base_url}}/loyalty/tiers" } },
+        { "name": "Loyalty Referral Code (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/loyalty/referral-code" } },
+        { "name": "Loyalty My Tier (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/loyalty/my-tier" } },
+        { "name": "Loyalty Redeem [405 BUG]", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/loyalty/redeem", "body": { "mode": "raw", "raw": "{\"points\":100,\"redeem_type\":\"discount\"}" }, "description": "SERVER BUG: Returns 405 Method Not Allowed." } }
+      ]
+    },
+    {
+      "name": "❌ BROKEN - Check-in QR & 2FA (HANG)",
+      "item": [
+        { "name": "Checkin QR [SERVER HANGS]", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/checkin/qr", "description": "SERVER BUG: Connection hangs, never responds. Request times out." } },
+        { "name": "Checkin Scan", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/checkin/scan", "body": { "mode": "raw", "raw": "{\"qr_token\":\"test\"}" } } },
+        { "name": "2FA Status [SERVER HANGS]", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/2fa/status", "description": "SERVER BUG: Connection hangs, never responds. Request times out." } },
+        { "name": "2FA Setup", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/2fa/setup", "body": { "mode": "raw", "raw": "{\"method\":\"otp\"}" } } }
+      ]
+    },
+    {
+      "name": "✅ RECOMMENDATIONS & SEARCH",
+      "item": [
+        { "name": "Trending", "request": { "method": "GET", "url": "{{base_url}}/recommendations/trending" } },
+        { "name": "Recommendations For You (auth) [401 w/o token]", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/recommendations/for-you" } },
+        { "name": "Also Booked (hotel=1)", "request": { "method": "GET", "url": "{{base_url}}/recommendations/also-booked/1" } },
+        { "name": "Filters Options", "request": { "method": "GET", "url": "{{base_url}}/filters/options" } },
+        { "name": "Filters Advanced", "request": { "method": "GET", "url": "{{base_url}}/filters/advanced" } },
+        { "name": "Filters Search [405 BUG - use GET]", "request": { "method": "GET", "url": "{{base_url}}/filters/search?location=Kathmandu", "description": "SERVER BUG: POST returns 405. Use GET with query params instead." } }
+      ]
+    },
+    {
+      "name": "✅ PROFILE & SETTINGS",
+      "item": [
+        { "name": "Get Owner Profile (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/get-owner" } },
+        { "name": "Update Profile (auth)", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/update-profile", "body": { "mode": "raw", "raw": "{\"name\":\"Test User\"}" } } },
+        { "name": "Profile Stats (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/profile/stats" } },
+        { "name": "Travel Preferences (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/profile/travel-preferences" } },
+        { "name": "Profile Addresses (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/profile/addresses" } },
+        { "name": "Linked Accounts (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/profile/linked-accounts" } },
+        { "name": "Notification Preferences (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/notification-preferences" } },
+        { "name": "Delete Account (auth)", "request": { "method": "DELETE", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/delete-user", "body": { "mode": "raw", "raw": "{\"password\":\"yourpassword\"}" } } }
+      ]
+    },
+    {
+      "name": "✅ WALLET & DEALS",
+      "item": [
+        { "name": "Wallet (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/wallet" } },
+        { "name": "Deals", "request": { "method": "GET", "url": "{{base_url}}/deals" } },
+        { "name": "Coupons Available", "request": { "method": "GET", "url": "{{base_url}}/coupons/available" } },
+        { "name": "Flash Sales", "request": { "method": "GET", "url": "{{base_url}}/flash-sales" } }
+      ]
+    },
+    {
+      "name": "✅ SYSTEM & MISC",
+      "item": [
+        { "name": "Get Home Data", "request": { "method": "GET", "url": "{{base_url}}/get-home-data" } },
+        { "name": "System Settings", "request": { "method": "GET", "url": "{{base_url}}/get-system-settings" } },
+        { "name": "Countries", "request": { "method": "GET", "url": "{{base_url}}/countries" } },
+        { "name": "Currencies", "request": { "method": "GET", "url": "{{base_url}}/currencies" } },
+        { "name": "Currencies Detect", "request": { "method": "GET", "url": "{{base_url}}/currencies/detect" } },
+        { "name": "FAQ", "request": { "method": "GET", "url": "{{base_url}}/faq" } },
+        { "name": "Blogs", "request": { "method": "GET", "url": "{{base_url}}/blogs" } },
+        { "name": "Get Categories", "request": { "method": "GET", "url": "{{base_url}}/get-categories" } },
+        { "name": "Get Slider", "request": { "method": "GET", "url": "{{base_url}}/get-slider" } },
+        { "name": "Reviews - Rate Hotel (auth)", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/rate-hotel", "body": { "mode": "raw", "raw": "{\"hotel_id\":1,\"rating\":5,\"comment\":\"Great stay\"}" } } },
+        { "name": "Chat Messages (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/chat/1/messages" } },
+        { "name": "Chat Send (auth)", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/chat/send", "body": { "mode": "raw", "raw": "{\"booking_id\":1,\"message\":\"Hello\"}" } } },
+        { "name": "Support Tickets (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/support/tickets" } },
+        { "name": "Price Alerts My (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/price-alerts/my" } },
+        { "name": "Waitlist My (auth)", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/waitlist/my" } },
+        { "name": "Manage Favourite (auth)", "request": { "method": "POST", "header": [{"key":"Authorization","value":"Bearer {{token}}"},{"key":"Content-Type","value":"application/json"}], "url": "{{base_url}}/manage-favourite", "body": { "mode": "raw", "raw": "{\"hotel_id\":1,\"type\":\"hotel\"}" } } },
+        { "name": "Get Favourite Item (auth) [401 w/o token]", "request": { "method": "GET", "header": [{"key":"Authorization","value":"Bearer {{token}}"}], "url": "{{base_url}}/get-favourite-item?type=hotel" } }
+      ]
+    }
+  ]
+}

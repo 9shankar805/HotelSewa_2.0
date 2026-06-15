@@ -1,8 +1,31 @@
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'shared/api_service.dart';
 import '../constants/api_config.dart';
 
 class RoomTypesService {
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('authToken');
+  }
+
+  // GET /room-types - List all room types (now fixed on backend — was 405)
+  Future<Map<String, dynamic>> getRoomTypes({String? hotelId}) async {
+    try {
+      final queryParams = <String, String>{};
+      if (hotelId != null) queryParams['hotel_id'] = hotelId;
+      final response = await ApiService.get(
+        ApiConfig.roomTypesEndpoint,
+        queryParams: queryParams.isNotEmpty ? queryParams : null,
+      );
+      return response['success'] == true || response['error'] == false
+          ? {'success': true, 'room_types': response['data']}
+          : {'success': false, 'message': response['message'] ?? 'Failed to load room types'};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to load room types'};
+    }
+  }
+
   // GET /room-types/{roomTypeId}/gallery - Room type gallery (Public)
   Future<Map<String, dynamic>> getRoomTypeGallery(String roomTypeId) async {
     try {
