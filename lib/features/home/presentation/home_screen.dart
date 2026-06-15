@@ -9,6 +9,7 @@ import '../../../core/services/booking_service.dart';
 import '../../../core/services/recommendations_service.dart';
 import '../../../core/services/deals_service.dart';
 import '../../../core/widgets/floating_chatbot.dart';
+import '../../../core/widgets/in_stay_banner.dart';
 import '../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../hotel/presentation/hotel_details_screen.dart';
 
@@ -154,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverToBoxAdapter(child: _toggle()),
               SliverToBoxAdapter(child: _search()),
               SliverToBoxAdapter(child: _chips()),
+              const SliverToBoxAdapter(child: InStayBanner()),
               if (_trip != null) SliverToBoxAdapter(child: _tripSection()),
               if (_recent.isNotEmpty) SliverToBoxAdapter(child: _recentSection()),
               SliverToBoxAdapter(child: _actions()),

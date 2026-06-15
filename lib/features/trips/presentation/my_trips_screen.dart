@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/booking_service.dart';
+import '../../../core/services/active_stay_service.dart';
 import '../../../core/widgets/cached_image.dart';
 import '../../../core/widgets/common_header.dart';
+import '../../instay/presentation/in_stay_dashboard_screen.dart';
 
 class MyTripsScreen extends StatefulWidget {
   const MyTripsScreen({Key? key}) : super(key: key);
@@ -43,10 +46,35 @@ class _MyTripsScreenState extends State<MyTripsScreen>
     try {
       final result = await _bookingService.getMyBookings();
       if (result['success'] == true) {
+        final bookings = (result['bookings'] as List).cast<Map<String, dynamic>>();
         setState(() {
-          _bookings = (result['bookings'] as List).cast<Map<String, dynamic>>();
+          _bookings = bookings;
           _loading = false;
         });
+
+        // Auto-detect checked-in stays and update ActiveStayService
+        if (mounted) {
+          final stayService = context.read<ActiveStayService>();
+          final checkedIn = bookings.where((b) {
+            final s = (b['status'] ?? '').toString().toLowerCase();
+            return s == 'checked_in' || s == 'checkin' || s == 'check_in';
+          }).toList();
+
+          if (checkedIn.isNotEmpty) {
+            stayService.setActiveBooking(checkedIn.first);
+            // Auto-open In-Stay dashboard if not already open
+            if (!stayService.hasActiveStay || stayService.activeBooking?['_from_cache'] == true) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => InStayDashboardScreen(booking: checkedIn.first),
+                ));
+              });
+            }
+          } else {
+            stayService.clearActiveStay();
+          }
+        }
       } else {
         setState(() {
           _error = result['message'] ?? 'Failed to load bookings';
@@ -435,6 +463,31 @@ class _MyTripsScreenState extends State<MyTripsScreen>
                       side: const BorderSide(color: AppColors.primary),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ),
+
+            // ── In-Stay Mode button for checked_in bookings ─────────────
+            if (status == 'checked_in' || status == 'checkin' || status == 'check_in')
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => InStayDashboardScreen(booking: booking),
+                      ),
+                    ),
+                    icon: const Icon(Icons.hotel_rounded, size: 18, color: Colors.white),
+                    label: const Text('Open In-Stay Services', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),

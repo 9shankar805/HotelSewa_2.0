@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/qr_checkin_service.dart';
+import '../../../core/services/active_stay_service.dart';
+import '../../instay/presentation/in_stay_dashboard_screen.dart';
 
 class OnlineCheckinScreen extends StatefulWidget {
   final Map<String, dynamic>? arguments;
@@ -176,9 +179,28 @@ class _OnlineCheckinScreenState extends State<OnlineCheckinScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () { Navigator.pop(context); Navigator.pop(context); },
+                onPressed: () {
+                  Navigator.pop(context); // close bottom sheet
+                  // Update ActiveStayService and open In-Stay dashboard
+                  final booking = widget.arguments ?? {};
+                  if (mounted) {
+                    context.read<ActiveStayService>().setActiveBooking({
+                      ...booking,
+                      'status': 'checked_in',
+                    });
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => InStayDashboardScreen(booking: {
+                          ...booking,
+                          'status': 'checked_in',
+                        }),
+                      ),
+                    );
+                  }
+                },
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(vertical: 14), elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                child: const Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
+                child: const Text('Go to Hotel Services', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
               ),
             ),
           ],

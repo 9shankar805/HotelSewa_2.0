@@ -9,6 +9,7 @@ import 'core/navigation/go_router_config.dart';
 import 'core/providers/app_mode_provider.dart';
 import 'core/services/shared/api_service.dart';
 import 'core/services/shared/cache_service.dart';
+import 'core/services/active_stay_service.dart';
 import 'features/in_stay_ordering/presentation/providers/cart_provider.dart';
 import 'firebase_options.dart';
 // Owner Providers
@@ -83,6 +84,13 @@ class _MyAppState extends State<MyApp> {
         appRouter.go('/login');
       } catch (_) {}
     };
+
+    // Load any persisted active stay immediately (before first API call)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final stayService = context.read<ActiveStayService>();
+      stayService.loadPersistedStay();
+      stayService.init(); // starts polling
+    });
   }
 
   @override
@@ -91,6 +99,7 @@ class _MyAppState extends State<MyApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => AppModeProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => ActiveStayService()),
         ChangeNotifierProvider(create: (_) => owner_auth.AuthProvider(owner_auth_service.AuthService())),
         ChangeNotifierProvider(create: (_) => owner_booking.BookingProvider(owner_booking_service.BookingService())),
         ChangeNotifierProvider(create: (_) => RoomProvider()),

@@ -159,6 +159,8 @@ import '../../features/in_stay_ordering/presentation/screens/order_confirmation_
 import '../../features/in_stay_ordering/presentation/screens/order_details_screen.dart';
 // Checkin dashboard (owner)
 import '../../features/checkin/presentation/screens/checkin_dashboard_screen.dart';
+// In-Stay mode
+import '../../features/instay/presentation/in_stay_dashboard_screen.dart';
 import 'main_navigation.dart';
 import 'owner_navigation.dart';
 
@@ -391,6 +393,9 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/affiliate', builder: (_, __) => const AffiliateScreen()),
     GoRoute(path: '/near-me', builder: (_, __) => const NearMeScreen()),
     GoRoute(path: '/nlp-search', builder: (_, __) => const NlpSearchScreen()),
+    // ── In-Stay Mode ──────────────────────────────────────────────────────
+    GoRoute(path: '/in-stay', builder: (_, s) =>
+        InStayDashboardScreen(booking: s.extra as Map<String, dynamic>?)),
     // In-stay ordering (guest)
     GoRoute(path: '/menu', builder: (_, s) {
       final args = s.extra as Map<String, dynamic>?;
