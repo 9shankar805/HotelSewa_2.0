@@ -50,7 +50,7 @@ class _ReviewSubmissionScreenState extends State<ReviewSubmissionScreen> {
 
     try {
       final result = await _reviewService.submitReview(
-        hotelId: _hotel['id'].toString(),
+        hotelId: (_hotel['id'] ?? '').toString(),
         rating: _rating,
         comment: _commentController.text.trim(),
       );

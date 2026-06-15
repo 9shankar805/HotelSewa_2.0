@@ -184,7 +184,7 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
                                 children: [
                                   Text(account['name'] as String, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.darkGray)),
                                   if (linked && account['email'] != null)
-                                    Text(account['email'] as String, style: const TextStyle(fontSize: 12, color: AppColors.gray))
+                                    Text(account['email'].toString(), style: const TextStyle(fontSize: 12, color: AppColors.gray))
                                   else
                                     const Text('Not linked', style: TextStyle(fontSize: 12, color: AppColors.placeholder)),
                                 ],

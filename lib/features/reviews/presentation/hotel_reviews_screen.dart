@@ -46,8 +46,9 @@ class _HotelReviewsScreenState extends State<HotelReviewsScreen> {
     
     try {
       final result = await _reviewService.getHotelReviews(hotelId);
-      if (result['success'] && mounted) {
-        final List reviews = result['reviews'] as List;
+      if (result['success'] == true && mounted) {
+        final raw = result['reviews'];
+        final List reviews = raw is List ? raw : (raw is Map ? (raw['data'] ?? raw['reviews'] ?? []) : []);
         _reviews = reviews.map((review) => {
           'id': review['id'],
           'user': {
@@ -343,7 +344,7 @@ class _HotelReviewsScreenState extends State<HotelReviewsScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text((review['user'] as Map)['name'], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                                          if (review['stayDate'].isNotEmpty) 
+                                          if ((review['stayDate']?.toString() ?? '').isNotEmpty) 
                                             Text('Stayed: ${review['stayDate']}', style: const TextStyle(fontSize: 12, color: Color(0xFF666666))),
                                         ],
                                       ),
