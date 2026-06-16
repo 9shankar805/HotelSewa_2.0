@@ -28,6 +28,8 @@ class _InStayDashboardScreenState extends State<InStayDashboardScreen> {
   bool _loading = true;
   bool _qrExpanded = false;
   int _activeOrders = 0;
+  int _pendingHousekeeping = 0;
+  int _pendingMaintenance = 0;
 
   @override
   void initState() {
@@ -50,6 +52,8 @@ class _InStayDashboardScreenState extends State<InStayDashboardScreen> {
       if (hotelId.isNotEmpty) _loadHotel(hotelId, token),
       if (hotelId.isNotEmpty) _loadMenu(hotelId, token),
       _loadActiveOrders(token),
+      _loadHousekeepingCount(token),
+      _loadMaintenanceCount(token),
     ]);
 
     if (mounted) setState(() => _loading = false);
@@ -86,6 +90,42 @@ class _InStayDashboardScreenState extends State<InStayDashboardScreen> {
           return s == 'pending' || s == 'preparing' || s == 'ready';
         }).length;
         setState(() => _activeOrders = active);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadHousekeepingCount(String? token) async {
+    try {
+      final bookingId = _booking['id']?.toString() ?? '';
+      if (bookingId.isEmpty) return;
+      final r = await ApiService.get(
+        '${ApiConfig.housekeepingTasksEndpoint}?booking_id=$bookingId',
+        token: token,
+      );
+      if (r['success'] == true && mounted) {
+        final raw = r['data'];
+        final list = raw is List ? raw : (raw is Map ? (raw['data'] ?? []) : []);
+        final pending = (list as List).where((t) =>
+          (t['status'] ?? '').toString().toLowerCase() == 'pending').length;
+        setState(() => _pendingHousekeeping = pending);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadMaintenanceCount(String? token) async {
+    try {
+      final bookingId = _booking['id']?.toString() ?? '';
+      if (bookingId.isEmpty) return;
+      final r = await ApiService.get(
+        '${ApiConfig.maintenanceIssuesEndpoint}?booking_id=$bookingId',
+        token: token,
+      );
+      if (r['success'] == true && mounted) {
+        final raw = r['data'];
+        final list = raw is List ? raw : (raw is Map ? (raw['data'] ?? []) : []);
+        final pending = (list as List).where((t) =>
+          (t['status'] ?? '').toString().toLowerCase() == 'pending').length;
+        setState(() => _pendingMaintenance = pending);
       }
     } catch (_) {}
   }
@@ -394,8 +434,9 @@ class _InStayDashboardScreenState extends State<InStayDashboardScreen> {
       _ServiceTile(
         icon: Icons.room_service_rounded,
         label: 'Housekeeping',
-        subtitle: 'Request service',
+        subtitle: _pendingHousekeeping > 0 ? '$_pendingHousekeeping pending' : 'Request service',
         color: const Color(0xFF3B82F6),
+        badge: _pendingHousekeeping > 0 ? '$_pendingHousekeeping' : null,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>
             ServiceRequestScreen(booking: _booking, hotel: _hotel, requestType: 'housekeeping'))),
       ),
@@ -420,8 +461,9 @@ class _InStayDashboardScreenState extends State<InStayDashboardScreen> {
       _ServiceTile(
         icon: Icons.build_rounded,
         label: 'Maintenance',
-        subtitle: 'Report a fault',
+        subtitle: _pendingMaintenance > 0 ? '$_pendingMaintenance pending' : 'Report a fault',
         color: const Color(0xFF8B5CF6),
+        badge: _pendingMaintenance > 0 ? '$_pendingMaintenance' : null,
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>
             ServiceRequestScreen(booking: _booking, hotel: _hotel, requestType: 'maintenance'))),
       ),
@@ -485,10 +527,7 @@ class _InStayDashboardScreenState extends State<InStayDashboardScreen> {
         label: 'Rate Stay',
         subtitle: 'Mid-stay feedback',
         color: const Color(0xFFF59E0B),
-        onTap: () => Navigator.pushNamed(context, '/rate-stay', arguments: {
-          'booking': _booking,
-          'hotel': _hotel.isNotEmpty ? _hotel : {'id': _booking['hotel_id'], 'name': _hotelName},
-        }),
+        onTap: () => _showMidStayFeedbackDialog(context),
       ),
     ];
 
@@ -616,6 +655,152 @@ class _InStayDashboardScreenState extends State<InStayDashboardScreen> {
               ),
               const SizedBox(height: 8),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Mid-stay feedback dialog ──────────────────────────────────────────────
+  Future<void> _showMidStayFeedbackDialog(BuildContext context) async {
+    int _rating = 0;
+    final _commentCtrl = TextEditingController();
+    bool _submitting = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('How is your stay?', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+                const SizedBox(height: 4),
+                const Text('Your feedback helps us improve your experience right now.',
+                    style: TextStyle(fontSize: 13, color: Colors.white54)),
+                const SizedBox(height: 20),
+
+                // Star rating
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (i) {
+                      final star = i + 1;
+                      return GestureDetector(
+                        onTap: () => set(() => _rating = star),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Icon(
+                            star <= _rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                            size: 40,
+                            color: star <= _rating ? const Color(0xFFF59E0B) : Colors.white24,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                if (_rating > 0) ...[
+                  const SizedBox(height: 6),
+                  Center(
+                    child: Text(
+                      ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][_rating],
+                      style: const TextStyle(fontSize: 14, color: Color(0xFFF59E0B), fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+
+                // Comment
+                TextField(
+                  controller: _commentCtrl,
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Any specific feedback? (optional)',
+                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 1.5)),
+                    contentPadding: const EdgeInsets.all(14),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: (_rating == 0 || _submitting) ? null : () async {
+                      set(() => _submitting = true);
+                      try {
+                        final prefs = await SharedPreferences.getInstance();
+                        final token = prefs.getString('authToken');
+                        final bookingId = _booking['id']?.toString() ?? '';
+                        final response = await ApiService.post(
+                          '${ApiConfig.midStayFeedbackEndpoint}/$bookingId/mid-stay-feedback',
+                          token: token,
+                          data: {
+                            'rating': _rating,
+                            'comment': _commentCtrl.text.trim(),
+                            'categories': {'overall': _rating},
+                          },
+                        );
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(response['error'] == false || response['success'] == true
+                                ? 'Thank you for your feedback!'
+                                : (response['message'] ?? 'Feedback submitted')),
+                            backgroundColor: response['error'] == false || response['success'] == true
+                                ? AppColors.success : AppColors.error,
+                            behavior: SnackBarBehavior.floating,
+                          ));
+                        }
+                      } catch (_) {
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            content: Text('Thank you for your feedback!'),
+                            backgroundColor: AppColors.success,
+                            behavior: SnackBarBehavior.floating,
+                          ));
+                        }
+                      } finally {
+                        _commentCtrl.dispose();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF59E0B),
+                      disabledBackgroundColor: Colors.white12,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: _submitting
+                        ? const SizedBox(width: 20, height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Submit Feedback',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),

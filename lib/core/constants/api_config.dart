@@ -351,6 +351,7 @@ class ApiConfig {
   static const String invoicePreviewEndpoint = '/invoice'; // + /{bookingId}/preview
   static const String invoiceDownloadEndpoint = '/invoice'; // + /{bookingId}/download
   static const String corporateInvoiceEndpoint = '/corporate/invoice'; // + /{bookingId}
+  static const String midStayFeedbackEndpoint = '/bookings'; // + /{bookingId}/mid-stay-feedback
 
   // ==================== 38. BLACKOUT DATES (OWNER) ====================
 

@@ -136,11 +136,20 @@ class _ServiceRequestScreenState extends State<ServiceRequestScreen> {
       if (response['success'] == true || response['error'] == false) {
         _showSuccess();
       } else {
-        // Even if API fails, show local confirmation (concierge endpoint may not exist yet)
-        _showSuccess();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(response['message'] ?? 'Request failed. Please try again.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ));
       }
-    } catch (_) {
-      if (mounted) _showSuccess(); // graceful — don't block UX
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Network error. Please try again.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
