@@ -246,7 +246,17 @@ class _HotelRegistrationReviewScreenState
       // Step 1: Create hotel (JSON, no images)
       final hotelData = {
         'name': widget.hotelName,
-        'description': widget.hotelDescription,
+        'description': widget.hotelDescription.isNotEmpty
+            ? widget.hotelDescription
+            : null,
+        'property_type': widget.propertyType,
+        'total_rooms': int.tryParse(widget.totalRooms) ?? 1,
+        if (widget.yearOfEstablishment.isNotEmpty)
+          'year_established': int.tryParse(widget.yearOfEstablishment),
+        if (widget.priceRangeMin.isNotEmpty)
+          'price_min': double.tryParse(widget.priceRangeMin),
+        if (widget.priceRangeMax.isNotEmpty)
+          'price_max': double.tryParse(widget.priceRangeMax),
         'star_rating': 3,
         'check_in_time': '14:00',
         'check_out_time': '11:00',
@@ -254,14 +264,17 @@ class _HotelRegistrationReviewScreenState
         'address': widget.hotelAddress.isNotEmpty
             ? widget.hotelAddress
             : '${widget.landmark}, ${widget.city}',
+        if (widget.landmark.isNotEmpty) 'landmark': widget.landmark,
         'city': widget.city,
+        if (widget.district.isNotEmpty) 'district': widget.district,
         'state': widget.state,
         'country': widget.country,
+        if (widget.wardNumber.isNotEmpty) 'ward_number': widget.wardNumber,
         if (widget.latitude != null) 'latitude': widget.latitude,
         if (widget.longitude != null) 'longitude': widget.longitude,
         'contact_number': widget.hotelPhone,
         'email': authProvider.user?.email ?? 'owner@hotel.com',
-      };
+      }..removeWhere((key, value) => value == null);
 
       HotelService.setToken(authProvider.token ?? '');
       final hotelService = HotelService();

@@ -170,7 +170,8 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                               _buildInfoRow('Created', _formatDate(_hotelData!['created_at']), Icons.calendar_today_rounded),
                               _buildInfoRow('Updated', _formatDate(_hotelData!['updated_at']), Icons.update_rounded),
                             ]).animate().fadeIn(duration: 400.ms, delay: 700.ms),
-                            const SizedBox(height: 100), // Bottom padding for FAB
+                            // Safe bottom padding: FAB height (56) + bottom nav (80) + extra breathing room
+                            SizedBox(height: MediaQuery.of(context).padding.bottom + 160),
                           ],
                         ),
                       ),
@@ -202,8 +203,10 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
-            fontSize: 18,
+            fontSize: 16,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
         background: Container(
           decoration: BoxDecoration(
@@ -421,10 +424,12 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                   status,
                   style: TextStyle(
                     color: statusColor,
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -445,7 +450,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
 
   Widget _buildInfoCard(String title, List<Widget> children) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -480,18 +485,22 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF2D3748),
-                  letterSpacing: -0.3,
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF2D3748),
+                    letterSpacing: -0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           ...children,
         ],
       ),
@@ -552,6 +561,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                     color: Color(0xFF2D3748),
                     fontSize: 15,
                   ),
+                  softWrap: true,
                 ),
               ],
             ),
@@ -621,13 +631,17 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Amenities',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF2D3748),
-                  letterSpacing: -0.3,
+              const Expanded(
+                child: Text(
+                  'Amenities',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF2D3748),
+                    letterSpacing: -0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],
@@ -750,13 +764,17 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                'Hotel Images (${imagesList.length})',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF2D3748),
-                  letterSpacing: -0.3,
+              Expanded(
+                child: Text(
+                  'Hotel Images (${imagesList.length})',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF2D3748),
+                    letterSpacing: -0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],

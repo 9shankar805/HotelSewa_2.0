@@ -84,7 +84,7 @@ class MediaService {
 
   // DELETE /hotel-owner/videos/{id}
   static Future<void> deleteVideoTour(String id) async {
-    final response = await ApiService.delete('${ApiConfig.ownerVideosSetPrimaryEndpoint}/$id', token: _token);
+    final response = await ApiService.delete('${ApiConfig.ownerVideosEndpoint}/$id', token: _token);
     if (response['success'] != true) {
       throw Exception(response['message'] ?? 'Failed to delete video tour');
     }

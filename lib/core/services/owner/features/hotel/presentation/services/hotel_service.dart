@@ -114,11 +114,11 @@ class HotelService {
     throw Exception(response['message'] ?? 'Failed to add blackout date range');
   }
 
-  // DELETE /hotel-owner/blackout-dates — remove blackout dates
-  static Future<void> deleteBlackoutDates(Map<String, dynamic> data) async {
-    // DELETE with body — use post workaround or pass as query; server may vary
+  // DELETE /hotel-owner/blackout-dates (body: { hotel_id, dates: [...] })
+  static Future<void> removeBlackoutDates(Map<String, dynamic> data) async {
+    // DELETE with body — pass data so hotel_id + dates are sent
     final response =
-        await ApiService.delete('/hotel-owner/blackout-dates', token: _token);
+        await ApiService.delete('/hotel-owner/blackout-dates', token: _token, data: data);
     if (response['success'] != true) {
       throw Exception(response['message'] ?? 'Failed to delete blackout dates');
     }

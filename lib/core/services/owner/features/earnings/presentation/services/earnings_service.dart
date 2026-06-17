@@ -42,8 +42,9 @@ class EarningsService {
     String? status,
   }) async {
     final queryParams = <String, String>{};
-    if (startDate != null) queryParams['startDate'] = startDate;
-    if (endDate != null) queryParams['endDate'] = endDate;
+    // API expects 'from' and 'to' (not startDate/endDate)
+    if (startDate != null) queryParams['from'] = startDate;
+    if (endDate != null) queryParams['to'] = endDate;
     if (type != null) queryParams['type'] = type;
     if (status != null) queryParams['status'] = status;
     final response = await ApiService.get('/hotel-owner/transactions/filter',

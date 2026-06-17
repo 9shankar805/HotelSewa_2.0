@@ -144,6 +144,7 @@ class ApiConfig {
   static const String ownerVideosUploadEndpoint = '/hotel-owner/videos/upload';
   static const String ownerVideosLinkEndpoint = '/hotel-owner/videos/link';
   static const String ownerVideosSetPrimaryEndpoint = '/hotel-owner/videos'; // + /{id}/set-primary
+  static const String ownerVideosEndpoint = '/hotel-owner/videos'; // DELETE /{id}
 
   // ==================== 14. ROOM TYPE MEDIA (OWNER) ====================
 

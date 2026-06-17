@@ -32,6 +32,24 @@ import '../../../../core/services/owner/price_alerts_service.dart';
 import '../../../../core/services/owner/payment_service.dart';
 import '../../../../core/services/owner/orders_service.dart';
 import '../../../chat/presentation/services/chat_api_service.dart';
+// Top-level canonical owner services
+import '../../../../core/services/owner/bookings_management_service.dart';
+import '../../../../core/services/owner/media_service.dart';
+import '../../../../core/services/owner/checkin_service.dart';
+import '../../../../core/services/owner/tax_service.dart';
+import '../../../../core/services/owner/ical_service.dart';
+import '../../../../core/services/owner/guest_messaging_service.dart';
+import '../../../../core/services/owner/competitor_service.dart';
+import '../../../../core/services/owner/blackout_dates_service.dart';
+import '../../../../core/services/owner/reviews_service.dart' as owner_reviews;
+import '../../../../core/services/owner/offers_service.dart' as owner_offers;
+import '../../../../core/services/owner/pricing_service.dart' as owner_pricing;
+import '../../../../core/services/owner/hotel_management_service.dart';
+import '../../../../core/services/owner/auth_account_service.dart';
+import '../../../../core/services/owner/invoice_service.dart';
+import '../../../../core/services/owner/dashboard_service.dart' as owner_dashboard;
+import '../../../../core/services/owner/earnings_service.dart' as owner_earnings;
+import '../../../../core/services/owner/currency_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
@@ -358,6 +376,7 @@ class AuthProvider extends ChangeNotifier {
 
   void _setTokenForServices(String token) {
     _token = token;
+    // ── Feature-scoped inner services ──
     DashboardService.setToken(token);
     BookingService.setToken(token);
     RoomService.setToken(token);
@@ -385,6 +404,24 @@ class AuthProvider extends ChangeNotifier {
     PaymentService.setToken(token);
     OrdersService.setToken(token);
     ChatApiService.setToken(token);
+    // ── Top-level canonical owner services ──
+    BookingsManagementService.setToken(token);
+    MediaService.setToken(token);
+    CheckinService.setToken(token);
+    TaxService.setToken(token);
+    ICalService.setToken(token);
+    GuestMessagingService.setToken(token);
+    CompetitorService.setToken(token);
+    BlackoutDatesService.setToken(token);
+    owner_reviews.ReviewsService.setToken(token);
+    owner_offers.OffersService.setToken(token);
+    owner_pricing.PricingService.setToken(token);
+    HotelManagementService.setToken(token);
+    AuthAccountService.setToken(token);
+    InvoiceService.setToken(token);
+    owner_dashboard.DashboardService.setToken(token);
+    owner_earnings.EarningsService.setToken(token);
+    CurrencyService.setToken(token);
   }
 
   /// Public method to refresh tokens for all services
@@ -401,6 +438,7 @@ class AuthProvider extends ChangeNotifier {
 
   void _clearTokensFromServices() {
     _token = null;
+    // ── Feature-scoped inner services ──
     DashboardService.setToken('');
     BookingService.setToken('');
     RoomService.setToken('');
@@ -428,6 +466,24 @@ class AuthProvider extends ChangeNotifier {
     PaymentService.setToken('');
     OrdersService.setToken('');
     ChatApiService.setToken('');
+    // ── Top-level canonical owner services ──
+    BookingsManagementService.setToken('');
+    MediaService.setToken('');
+    CheckinService.setToken('');
+    TaxService.setToken('');
+    ICalService.setToken('');
+    GuestMessagingService.setToken('');
+    CompetitorService.setToken('');
+    BlackoutDatesService.setToken('');
+    owner_reviews.ReviewsService.setToken('');
+    owner_offers.OffersService.setToken('');
+    owner_pricing.PricingService.setToken('');
+    HotelManagementService.setToken('');
+    AuthAccountService.setToken('');
+    InvoiceService.setToken('');
+    owner_dashboard.DashboardService.setToken('');
+    owner_earnings.EarningsService.setToken('');
+    CurrencyService.setToken('');
   }
 
   Future<void> _saveUserSession(

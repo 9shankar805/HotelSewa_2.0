@@ -82,16 +82,16 @@ class BookingService {
     return await cancelBooking(bookingId);
   }
 
-  // GET /my-bookings filtered by id
+  // GET /hotel-owner/bookings?id={bookingId} — owner: get single booking detail
   Future<Map<String, dynamic>> getBookingDetails(String bookingId) async {
     final response = await ApiService.get(
-      '/my-bookings',
+      '/hotel-owner/bookings',
       token: _token,
-      queryParams: {'bookingId': bookingId},
+      queryParams: {'id': bookingId},
     );
     if (response['success'] == true) {
       final data = response['data'];
-      if (data is List && data.isNotEmpty) return data.first;
+      if (data is List && data.isNotEmpty) return Map<String, dynamic>.from(data.first as Map);
       if (data is Map) return Map<String, dynamic>.from(data);
       return {};
     }
@@ -205,11 +205,12 @@ class BookingService {
     return await getCheckinQr(bookingId);
   }
 
+  // POST /checkin/checkout — owner checks out a guest by bookingId
   Future<Map<String, dynamic>> checkOutGuest(String bookingId) async {
     final response = await ApiService.post(
-      '/cancel-booking/$bookingId',
+      '/checkin/checkout',
       token: _token,
-      data: {'action': 'checkout'},
+      data: {'booking_id': bookingId},
     );
     if (response['success'] == true) {
       return response['data'] ?? {};
