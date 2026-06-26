@@ -1,9 +1,15 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'shared/api_service.dart';
 import 'shared/cache_service.dart';
 import '../constants/api_config.dart';
 
 class HotelService {
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('authToken');
+  }
+
   Future<Map<String, dynamic>> getHotels({Map<String, dynamic>? filters}) async {
     try {
       // Return cached data immediately if available (no filters applied)
@@ -115,8 +121,10 @@ class HotelService {
 
   Future<Map<String, dynamic>> recordHotelView(String hotelId) async {
     try {
+      final token = await _getToken();
       final response = await ApiService.post(
         ApiConfig.buildPath(ApiConfig.recordHotelViewEndpoint, '$hotelId/view'),
+        token: token,
       );
       return {'success': true, 'data': response['data']};
     } catch (e) {
@@ -127,7 +135,11 @@ class HotelService {
 
   Future<Map<String, dynamic>> getRecentlyViewedHotels() async {
     try {
-      final response = await ApiService.get(ApiConfig.recentlyViewedHotelsEndpoint);
+      final token = await _getToken();
+      final response = await ApiService.get(
+        ApiConfig.recentlyViewedHotelsEndpoint,
+        token: token,
+      );
       return {'success': true, 'data': response['data']};
     } catch (e) {
       debugPrint('[HotelService] Error getting recently viewed: $e');
