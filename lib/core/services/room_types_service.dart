@@ -64,13 +64,14 @@ class RoomTypesService {
   }
 
   // GET /room-types - List all room types (now fixed on backend — was 405)
-  Future<Map<String, dynamic>> getRoomTypes({String? hotelId}) async {
+  Future<Map<String, dynamic>> getRoomTypes({String? hotelId, String? token}) async {
     try {
       final queryParams = <String, String>{};
       if (hotelId != null) queryParams['hotel_id'] = hotelId;
       final response = await ApiService.get(
         ApiConfig.roomTypesEndpoint,
         queryParams: queryParams.isNotEmpty ? queryParams : null,
+        token: token,
       );
       return response['success'] == true || response['error'] == false
           ? {'success': true, 'room_types': response['data']}

@@ -68,6 +68,7 @@ class ApiService {
       var uri = Uri.parse('$baseUrl$endpoint');
       if (queryParams != null) uri = uri.replace(queryParameters: queryParams.map((k, v) => MapEntry(k, v.toString())));
       debugPrint('[API] POST $uri');
+      debugPrint('[API] POST data: $data');
       final response = await http
           .post(uri, headers: _getHeaders(token), body: data != null ? jsonEncode(data) : null)
           .timeout(Duration(seconds: ApiConfig.connectionTimeout));
@@ -169,6 +170,7 @@ class ApiService {
   }
 
   static Map<String, dynamic> _handleResponse(http.Response response) {
+    debugPrint('[API] Response body: ${response.body}');
     // Detect session expiry (401 Unauthorized)
     // IMPORTANT: Only trigger re-auth if we actually had a token in the request.
     // A 401 on a request made WITHOUT a token is a coding error, not session expiry.

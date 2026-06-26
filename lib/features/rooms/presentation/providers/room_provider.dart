@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../models/room_model.dart';
 import '../services/real_room_service.dart';
+import '../../../../core/services/room_types_service.dart';
 
 class RoomProvider extends ChangeNotifier {
   List<Room> _rooms = [];
@@ -151,18 +153,56 @@ class RoomProvider extends ChangeNotifier {
     return await RealRoomService.getRoomTypes(hotelId: hotelId, token: token);
   }
 
-  Future<void> createRoom({
-    required int roomTypeId,
-    required String roomNumber,
-    int? floor,
-    String status = 'available',
+  Future<Map<String, dynamic>> createRoomType({
+    required String hotelId,
+    required String name,
+    required double price,
+    required int capacity,
+    required int totalRooms,
+    String? description,
+    String? size,
+    List<int>? amenities,
+    File? coverPhoto,
     String? token,
   }) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final roomData = await RealRoomService.createRoom({
+      final result = await RoomTypesService().createRoomType(
+        hotelId: hotelId,
+        name: name,
+        price: price,
+        capacity: capacity,
+        totalRooms: totalRooms,
+        description: description,
+        size: size,
+        amenities: amenities,
+        coverPhoto: coverPhoto,
+        token: token,
+      );
+      return result;
+    } catch (e) {
+      _setError('Failed to create room type: ${e.toString()}');
+      return {'success': false, 'message': 'Failed to create room type: ${e.toString()}'};
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<Map<String, dynamic>> createRoom({
+    required int roomTypeId,
+    required String roomNumber,
+    int? floor,
+    String status = 'available',
+    String? token,
+    String? hotelId, // For reloading
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final result = await RealRoomService.createRoom({
         'room_type_id': roomTypeId,
         'room_number': roomNumber,
         'floor': floor,
@@ -170,9 +210,13 @@ class RoomProvider extends ChangeNotifier {
       }, token: token);
       
       // Reload rooms to get the new one
-      notifyListeners();
+      if (hotelId != null) {
+        await loadRooms(filter: 'all', hotelId: hotelId, token: token);
+      }
+      return result;
     } catch (e) {
       _setError('Failed to create room: ${e.toString()}');
+      return {'success': false, 'message': 'Failed to create room: ${e.toString()}'};
     } finally {
       _setLoading(false);
     }

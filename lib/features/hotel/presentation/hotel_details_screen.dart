@@ -97,6 +97,11 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
             // Fix all room images using centralized helper
             final fixedImages = ImageUrlHelper.fixList(r['images']);
             
+            // Calculate availability properly
+            final availableRooms = r['available_rooms'] as num? ?? 0;
+            final totalRooms = r['total_rooms'] as num? ?? 0;
+            final isAvailable = availableRooms > 0 || totalRooms > 0;
+            
             return {
               'id': r['id']?.toString() ?? '',
               'type': r['name'] ?? 'Room',
@@ -107,7 +112,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
               'price': r['effective_price'] ?? r['base_price'] ?? 0,
               'original_price': r['weekend_price'] ?? r['base_price'] ?? 0,
               'discount': 0,
-              'available': r['is_available'] ?? true,
+              'available': isAvailable,
               'max_guests': (r['max_adults'] ?? 2) + (r['max_children'] ?? 0),
               'size': '${r['room_size_sqft'] ?? '?'} sqft',
               'bed': r['bed_type'] ?? 'Standard',
@@ -118,8 +123,8 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
               'is_smoking': r['is_smoking'] ?? false,
               'extra_bed_available': r['extra_bed_available'] ?? false,
               'extra_bed_price': r['extra_bed_price'],
-              'total_rooms': r['total_rooms'] ?? 0,
-              'available_rooms': r['available_rooms'] ?? 0,
+              'total_rooms': totalRooms,
+              'available_rooms': availableRooms,
               'weekend_price': r['weekend_price'] ?? r['base_price'] ?? 0,
               // Hourly booking fields
               'hourly_available': r['hourly_available'] ?? false,

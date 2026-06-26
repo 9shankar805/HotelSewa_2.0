@@ -186,15 +186,7 @@ class _RoomTypesScreenState extends State<RoomTypesScreen> {
                         Text('Rs.${room['hourlyPrice']}/hr', style: const TextStyle(fontSize: 11, color: AppColors.info, fontWeight: FontWeight.w600)),
                     ]),
                     ElevatedButton(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => BookingFormScreen(arguments: {
-                          ...?widget.arguments,
-                          'room': room,
-                          'roomId': room['id'],
-                          'roomName': room['name'],
-                          'price': room['price'],
-                        }),
-                      )),
+                      onPressed: () => _bookRoom(room),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -211,6 +203,64 @@ class _RoomTypesScreenState extends State<RoomTypesScreen> {
         ],
       ),
     ).animate(delay: (index * 80).ms).fadeIn().slideY(begin: 0.1);
+  }
+
+  Future<void> _bookRoom(Map<String, dynamic> room) async {
+    // Show date picker for check-in
+    final checkInDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (checkInDate == null) return;
+
+    // Show date picker for check-out
+    final checkOutDate = await showDatePicker(
+      context: context,
+      initialDate: checkInDate.add(const Duration(days: 1)),
+      firstDate: checkInDate.add(const Duration(days: 1)),
+      lastDate: checkInDate.add(const Duration(days: 30)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (checkOutDate == null) return;
+
+    final nights = checkOutDate.difference(checkInDate).inDays;
+    final checkInStr = '${checkInDate.year}-${checkInDate.month.toString().padLeft(2, '0')}-${checkInDate.day.toString().padLeft(2, '0')}';
+    final checkOutStr = '${checkOutDate.year}-${checkOutDate.month.toString().padLeft(2, '0')}-${checkOutDate.day.toString().padLeft(2, '0')}';
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BookingFormScreen(
+          arguments: {
+            ...?widget.arguments,
+            'room': room,
+            'dates': {'checkIn': checkInStr, 'checkOut': checkOutStr, 'nights': nights},
+            'guests': 2,
+          },
+        ),
+      ),
+    );
   }
 
   Widget _infoChip(IconData icon, String text) => Row(mainAxisSize: MainAxisSize.min, children: [

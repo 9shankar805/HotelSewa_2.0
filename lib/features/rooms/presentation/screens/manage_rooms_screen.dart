@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/shared/api_service.dart';
-import '../../../../core/services/room_types_service.dart';
 import '../providers/room_provider.dart';
 import '../models/room_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -21,7 +20,6 @@ class _ManageRoomsScreenState extends State<ManageRoomsScreen> with TickerProvid
   final _searchCtrl = TextEditingController();
   String? _hotelId;
   String? _token;
-  final roomTypesService = RoomTypesService();
 
   static const _filters = ['all', 'available', 'occupied', 'maintenance', 'cleaning'];
   static const _filterLabels = {
@@ -285,7 +283,6 @@ class _ManageRoomsScreenState extends State<ManageRoomsScreen> with TickerProvid
                       _AddRoomTypeTab(
                         hotelId: _hotelId!,
                         token: _token!,
-                        roomTypesService: roomTypesService,
                         onRoomTypeCreated: () {
                           if (mounted) {
                             Navigator.pop(context);
@@ -509,12 +506,10 @@ class _ManageRoomsScreenState extends State<ManageRoomsScreen> with TickerProvid
 class _AddRoomTypeTab extends StatefulWidget {
   final String hotelId;
   final String token;
-  final RoomTypesService roomTypesService;
   final VoidCallback onRoomTypeCreated;
   const _AddRoomTypeTab({
     required this.hotelId,
     required this.token,
-    required this.roomTypesService,
     required this.onRoomTypeCreated,
   });
   @override
@@ -545,7 +540,7 @@ class _AddRoomTypeTabState extends State<_AddRoomTypeTab> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await widget.roomTypesService.createRoomType(
+      final result = await Provider.of<RoomProvider>(context, listen: false).createRoomType(
         hotelId: widget.hotelId,
         name: _nameCtrl.text.trim(),
         price: double.parse(_priceCtrl.text.trim()),
@@ -805,14 +800,27 @@ class _AddIndividualRoomTabState extends State<_AddIndividualRoomTab> {
 
     setState(() => _isSubmitting = true);
     try {
-      await context.read<RoomProvider>().createRoom(
+      final result = await context.read<RoomProvider>().createRoom(
         roomTypeId: _selectedRoomTypeId!,
         roomNumber: _roomNumberCtrl.text.trim(),
         floor: int.tryParse(_floorCtrl.text.trim()),
         status: _selectedStatus,
         token: widget.token,
+        hotelId: widget.hotelId,
       );
-      widget.onRoomCreated();
+      if (result['success'] == true) {
+        widget.onRoomCreated();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to create room'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

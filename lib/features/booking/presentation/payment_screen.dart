@@ -56,14 +56,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final bookingData = <String, dynamic>{
         'hotel_id': _hotel['id']?.toString() ?? _hotel['hotel_id']?.toString() ?? '',
         'room_type_id': _room['id']?.toString() ?? _room['room_type_id']?.toString() ?? '',
-        'check_in_date': _dates['checkIn'] ?? _dates['check_in'] ?? '',
-        'check_out_date': _dates['checkOut'] ?? _dates['check_out'] ?? '',
-        'adults': _dates['adults'] ?? _dates['guests'] ?? 1,
-        'children': _dates['children'] ?? 0,
-        'room_count': _dates['rooms'] ?? 1,
+        'check_in': _dates['checkIn'] ?? _dates['check_in'] ?? '',
+        'check_out': _dates['checkOut'] ?? _dates['check_out'] ?? '',
+        'guests': _dates['adults'] ?? _dates['guests'] ?? 1,
         'payment_method': _selectedMethod,
-        'total_amount': _totalAmount,
-        'status': 'confirmed',
       };
 
       // Add guest info if available
@@ -75,9 +71,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
         bookingData['special_requests'] = guest['specialRequests'] ?? '';
       }
 
+      print('🔔 Booking Data to send: $bookingData');
+      print('🔔 Token: $token');
+
       // Call the actual booking API
       final bookingService = BookingService();
       final result = await bookingService.createBooking(bookingData);
+
+      print('🔔 Booking API result: $result');
 
       if (!mounted) return;
       setState(() => _processing = false);
