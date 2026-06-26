@@ -11,6 +11,7 @@ class AppConstants {
   static const String authTokenKey = 'authToken';
   static const String userKey = 'user';
   static const String hotelKey = 'hotel';
+  static const String isHotelApprovedKey = 'isHotelApproved';
   static const String onboardingCompleteKey = 'onboardingComplete';
 
   // UI Constants

@@ -32,21 +32,77 @@ class Booking {
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
+    // Support both camelCase and snake_case API responses
+    final String id = json['id']?.toString() ?? '';
+    final String guestName = (json['guestName'] ?? json['guest_name'] ?? '')
+        .toString();
+    final String guestEmail = (json['guestEmail'] ?? json['guest_email'] ?? '')
+        .toString();
+    final String guestPhone =
+        (json['guestPhone'] ?? json['guest_phone'] ?? json['phone'] ?? '')
+            .toString();
+    final String roomNumber = (json['roomNumber'] ?? json['room_number'] ?? '')
+        .toString();
+
+    DateTime parseDate(dynamic val) {
+      if (val == null) return DateTime.now();
+      try {
+        return DateTime.parse(val.toString());
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+
+    final DateTime checkIn = parseDate(json['checkIn'] ?? json['check_in']);
+    final DateTime checkOut = parseDate(json['checkOut'] ?? json['check_out']);
+    final double amount = (json['amount'] ?? 0.0).toDouble();
+    final String status = (json['status'] ?? 'pending').toString();
+    final String paymentStatus =
+        (json['paymentStatus'] ?? json['payment_status'] ?? 'pending')
+            .toString();
+    final int numberOfGuests =
+        (json['numberOfGuests'] ??
+                json['number_of_guests'] ??
+                json['guests'] ??
+                1)
+            is int
+        ? json['numberOfGuests'] ??
+              json['number_of_guests'] ??
+              json['guests'] ??
+              1
+        : int.tryParse(
+                (json['numberOfGuests'] ??
+                        json['number_of_guests'] ??
+                        json['guests'] ??
+                        '1')
+                    .toString(),
+              ) ??
+              1;
+    final String? specialRequests =
+        json['specialRequests']?.toString() ??
+        json['special_requests']?.toString();
+    final DateTime createdAt = parseDate(
+      json['createdAt'] ?? json['created_at'],
+    );
+    final DateTime updatedAt = parseDate(
+      json['updatedAt'] ?? json['updated_at'],
+    );
+
     return Booking(
-      id: json['id'] ?? '',
-      guestName: json['guestName'] ?? '',
-      guestEmail: json['guestEmail'] ?? '',
-      guestPhone: json['guestPhone'] ?? '',
-      roomNumber: json['roomNumber'] ?? '',
-      checkIn: DateTime.parse(json['checkIn'] ?? DateTime.now().toIso8601String()),
-      checkOut: DateTime.parse(json['checkOut'] ?? DateTime.now().toIso8601String()),
-      amount: (json['amount'] ?? 0.0).toDouble(),
-      status: json['status'] ?? 'pending',
-      paymentStatus: json['paymentStatus'] ?? 'pending',
-      numberOfGuests: json['numberOfGuests'] ?? 1,
-      specialRequests: json['specialRequests'],
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
+      id: id,
+      guestName: guestName,
+      guestEmail: guestEmail,
+      guestPhone: guestPhone,
+      roomNumber: roomNumber,
+      checkIn: checkIn,
+      checkOut: checkOut,
+      amount: amount,
+      status: status,
+      paymentStatus: paymentStatus,
+      numberOfGuests: numberOfGuests,
+      specialRequests: specialRequests,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 
@@ -123,15 +179,15 @@ class Booking {
   bool get isCheckedOut => status == 'checked_out';
   bool get isCancelled => status == 'cancelled';
   bool get isPending => status == 'pending';
-  
+
   bool get isPaid => paymentStatus == 'paid';
   bool get isPendingPayment => paymentStatus == 'pending';
   bool get isRefunded => paymentStatus == 'refunded';
-  
+
   int get nights {
     final difference = checkOut.difference(checkIn);
     return difference.inDays;
   }
-  
+
   double get amountPerNight => nights > 0 ? amount / nights : amount;
 }

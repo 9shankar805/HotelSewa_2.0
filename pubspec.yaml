@@ -1,6 +1,6 @@
 name: hotelsewa_app
 description: HotelSewa Customer App - Flutter version
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.1+2
 
 environment:
@@ -9,26 +9,23 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+
   # Navigation
   go_router: ^14.6.2
-  
+
   # State Management
-  flutter_bloc: ^8.1.6
-  equatable: ^2.0.5
   provider: ^6.1.2
-  flutter_riverpod: ^2.5.1
-  
+
   # Network
   dio: ^5.9.1
   http: ^1.2.2
   retrofit: ^4.1.0
   json_annotation: ^4.9.0
-  
+
   # Local Storage
   shared_preferences: ^2.3.3
   flutter_secure_storage: ^9.2.4
-  
+
   # UI Components
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
@@ -45,25 +42,25 @@ dependencies:
   flutter_staggered_grid_view: ^0.7.0
   mobile_scanner: ^7.2.0
   fl_chart: ^0.66.0
-  
+
   # Auth
   google_sign_in: ^6.2.2
   sign_in_with_apple: ^6.1.4
   firebase_auth: ^5.2.0
   local_auth: ^2.3.0
-  
+
   # Payment
   flutter_stripe: ^10.1.0
-  
+
   # Notifications
   firebase_core: ^3.8.0
   firebase_messaging: ^15.1.6
   flutter_local_notifications: ^21.0.0
-  
+
   # Location Services
   geolocator: ^10.1.0
   google_maps_flutter: ^2.6.0
-  
+
   # Utilities
   intl: ^0.19.0
   flutter_dotenv: ^5.2.1
@@ -71,7 +68,7 @@ dependencies:
   qr_flutter: ^4.1.0
   permission_handler: ^11.3.1
   connectivity_plus: ^6.0.5
-  
+
   # Offline cache
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -84,7 +81,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1
   flutter_native_splash: ^2.4.0
-  
+
   # Code Generation
   build_runner: ^2.4.11
   retrofit_generator: ^8.1.0

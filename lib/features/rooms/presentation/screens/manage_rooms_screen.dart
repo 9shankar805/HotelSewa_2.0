@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/shared/api_service.dart';
 import '../providers/room_provider.dart';
 import '../models/room_model.dart';
+// Import the owner auth provider to read hotelId at runtime
+import '../../../auth/presentation/providers/auth_provider.dart'
+    show AuthProvider;
 
 class ManageRoomsScreen extends StatefulWidget {
   const ManageRoomsScreen({super.key});
@@ -35,16 +39,66 @@ class _ManageRoomsScreenState extends State<ManageRoomsScreen> {
     super.dispose();
   }
 
+  /// Resolves the hotelId using three fallback strategies:
+  /// 1. SharedPreferences ('hotelId' / 'hotel_id')
+  /// 2. AuthProvider (from the running session)
+  /// 3. Live API call to /my-hotels (fetches first hotel's id)
+  Future<String?> _resolveHotelId(String token) async {
+    // ── Strategy 1: SharedPreferences ──
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString('hotelId') ?? prefs.getString('hotel_id');
+    if (stored != null && stored.isNotEmpty) return stored;
+
+    // ── Strategy 2: AuthProvider in-memory ──
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final user = auth.user;
+      if (user != null) {
+        // Some builds store hotelId in the user model
+        final dynamic hid = (user as dynamic).hotelId;
+        if (hid != null && hid.toString().isNotEmpty) {
+          await prefs.setString('hotelId', hid.toString());
+          return hid.toString();
+        }
+      }
+    } catch (_) {}
+
+    // ── Strategy 3: Live API /my-hotels ──
+    try {
+      final response = await ApiService.get('/my-hotels', token: token);
+      if (response['success'] == true) {
+        final data = response['data'];
+        String? id;
+        if (data is List && data.isNotEmpty) {
+          id = data.first['id']?.toString();
+        } else if (data is Map) {
+          id = data['id']?.toString();
+        }
+        if (id != null && id.isNotEmpty) {
+          // Persist it so future reads are instant
+          await prefs.setString('hotelId', id);
+          await prefs.setString('hotel_id', id);
+          debugPrint('✅ ManageRooms: hotelId resolved via API → $id');
+          return id;
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ ManageRooms: /my-hotels fetch failed: $e');
+    }
+
+    return null;
+  }
+
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
-    _hotelId = prefs.getString('hotelId') ?? prefs.getString('hotel_id');
-    _token   = prefs.getString('authToken');
-    
-    if (_hotelId == null || _hotelId!.isEmpty) {
+    _token = prefs.getString('authToken');
+
+    if (_token == null || _token!.isEmpty) {
+      // No token at all — nothing we can do
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Hotel ID not found. Please log in again.'),
+            content: Text('Session expired. Please log in again.'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -52,11 +106,31 @@ class _ManageRoomsScreenState extends State<ManageRoomsScreen> {
       }
       return;
     }
-    
-    _load();
+
+    _hotelId = await _resolveHotelId(_token!);
+
+    if (_hotelId == null || _hotelId!.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not find your hotel. Please register a hotel first.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {}); // trigger rebuild so _hotelId is available for _showAddRoom guard
+      _load();
+    }
   }
 
   void _load() {
+    if (_hotelId == null || _token == null) return;
     context.read<RoomProvider>().loadRooms(
       filter: _filter, hotelId: _hotelId, token: _token,
     );

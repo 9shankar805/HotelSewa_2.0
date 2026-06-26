@@ -26,23 +26,40 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    // Support both snake_case and camelCase API responses
+    final String phoneNum =
+        json['mobile']?.toString() ??
+        json['phone']?.toString() ??
+        json['phoneNumber']?.toString() ??
+        json['contact_number']?.toString() ??
+        '';
     return User(
       id: json['id']?.toString() ?? '',
       email: json['email'] ?? '',
       name: json['name'] ?? '',
-      phoneNumber: json['mobile']?.toString() ?? json['phone'] ?? json['phoneNumber'] ?? '',
-      role: json['role'] ?? (json['roles'] is List && (json['roles'] as List).isNotEmpty
-          ? (json['roles'] as List).first['name'] ?? 'User'
-          : 'User'),
-      profileImageUrl: json['profile'] ?? json['profileImage'] ?? json['profileImageUrl'],
-      isEmailVerified: json['email_verified_at'] != null || json['verified'] == true || json['isEmailVerified'] == true,
+      phoneNumber: phoneNum,
+      role:
+          json['role'] ??
+          (json['roles'] is List && (json['roles'] as List).isNotEmpty
+              ? (json['roles'] as List).first['name'] ?? 'User'
+              : 'User'),
+      profileImageUrl:
+          json['profile'] ?? json['profileImage'] ?? json['profileImageUrl'],
+      isEmailVerified:
+          json['email_verified_at'] != null ||
+          json['verified'] == true ||
+          json['isEmailVerified'] == true,
       isPhoneVerified: json['verified'] ?? json['isPhoneVerified'] ?? false,
       hasHotel: json['hasHotel'] ?? false,
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) ?? DateTime.now()
-          : json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at']) ?? DateTime.now()
+          : json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
           : DateTime.now(),
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at']) ?? DateTime.now()
-          : json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt']) ?? DateTime.now()
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at']) ?? DateTime.now()
+          : json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt']) ?? DateTime.now()
           : DateTime.now(),
     );
   }

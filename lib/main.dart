@@ -14,14 +14,19 @@ import 'features/in_stay_ordering/presentation/providers/cart_provider.dart';
 import 'firebase_options.dart';
 // Owner Providers
 import 'features/auth/presentation/providers/auth_provider.dart' as owner_auth;
-import 'features/auth/presentation/services/auth_service.dart' as owner_auth_service;
-import 'features/bookings/presentation/providers/booking_provider.dart' as owner_booking;
-import 'features/bookings/presentation/services/booking_service.dart' as owner_booking_service;
+import 'features/auth/presentation/services/auth_service.dart'
+    as owner_auth_service;
+import 'features/bookings/presentation/providers/booking_provider.dart'
+    as owner_booking;
+import 'features/bookings/presentation/services/booking_service.dart'
+    as owner_booking_service;
 import 'features/rooms/presentation/providers/room_provider.dart';
 import 'features/earnings/presentation/providers/earnings_provider.dart';
 import 'features/earnings/presentation/services/earnings_service.dart';
-import 'features/profile/presentation/providers/profile_provider.dart' as owner_profile;
-import 'features/profile/presentation/services/profile_service.dart' as owner_profile_service;
+import 'features/profile/presentation/providers/profile_provider.dart'
+    as owner_profile;
+import 'features/profile/presentation/services/profile_service.dart'
+    as owner_profile_service;
 import 'features/calendar/presentation/providers/calendar_provider.dart';
 import 'features/offers/presentation/providers/offers_provider.dart';
 import 'features/chat/presentation/providers/chat_provider.dart';
@@ -75,14 +80,12 @@ class _MyAppState extends State<MyApp> {
     // Wire session-expiry handler: clears token and redirects to login
     ApiService.onSessionExpired = () {
       ApiService.clearToken();
-      // Navigate to login, clearing the entire stack
-      navigatorKey.currentContext?.let((ctx) {
-        navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (_) => false);
-      });
-      // Fallback via go_router
+      // Navigate to login via go_router (Navigator 2.0) clearing the entire stack
       try {
         appRouter.go('/login');
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Session expiry navigation error: $e');
+      }
     };
 
     // Load any persisted active stay immediately (before first API call)
@@ -100,15 +103,30 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => AppModeProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => ActiveStayService()),
-        ChangeNotifierProvider(create: (_) => owner_auth.AuthProvider(owner_auth_service.AuthService())),
-        ChangeNotifierProvider(create: (_) => owner_booking.BookingProvider(owner_booking_service.BookingService())),
+        ChangeNotifierProvider(
+          create: (_) =>
+              owner_auth.AuthProvider(owner_auth_service.AuthService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => owner_booking.BookingProvider(
+            owner_booking_service.BookingService(),
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => RoomProvider()),
-        ChangeNotifierProvider(create: (_) => EarningsProvider(EarningsService())),
-        ChangeNotifierProvider(create: (_) => owner_profile.ProfileProvider(owner_profile_service.ProfileService())),
+        ChangeNotifierProvider(
+          create: (_) => EarningsProvider(EarningsService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => owner_profile.ProfileProvider(
+            owner_profile_service.ProfileService(),
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => CalendarProvider()),
         ChangeNotifierProvider(create: (_) => OffersProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
-        ChangeNotifierProvider(create: (_) => DashboardProvider(DashboardService())),
+        ChangeNotifierProvider(
+          create: (_) => DashboardProvider(DashboardService()),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: appRouter,
@@ -118,7 +136,9 @@ class _MyAppState extends State<MyApp> {
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.system, // Respects device dark/light setting
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.noScaling),
           child: child!,
         ),
       ),

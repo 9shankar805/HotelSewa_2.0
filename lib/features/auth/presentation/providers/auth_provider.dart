@@ -47,8 +47,10 @@ import '../../../../core/services/owner/pricing_service.dart' as owner_pricing;
 import '../../../../core/services/owner/hotel_management_service.dart';
 import '../../../../core/services/owner/auth_account_service.dart';
 import '../../../../core/services/owner/invoice_service.dart';
-import '../../../../core/services/owner/dashboard_service.dart' as owner_dashboard;
-import '../../../../core/services/owner/earnings_service.dart' as owner_earnings;
+import '../../../../core/services/owner/dashboard_service.dart'
+    as owner_dashboard;
+import '../../../../core/services/owner/earnings_service.dart'
+    as owner_earnings;
 import '../../../../core/services/owner/currency_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -76,14 +78,20 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      final response =
-          await _authService.login(email: email, password: password);
+      final response = await _authService.login(
+        email: email,
+        password: password,
+      );
 
       if (response['success'] == true) {
         final token = response['data']?['token'] ?? response['token'];
-        final rawData = response['data'] is Map ? Map<String, dynamic>.from(response['data']) : <String, dynamic>{};
+        final rawData = response['data'] is Map
+            ? Map<String, dynamic>.from(response['data'])
+            : <String, dynamic>{};
         // API returns user fields directly in data (no nested 'user' key)
-        final userData = rawData.containsKey('user') ? rawData['user'] as Map<String, dynamic> : rawData;
+        final userData = rawData.containsKey('user')
+            ? rawData['user'] as Map<String, dynamic>
+            : rawData;
         _user = User.fromJson(userData);
         _token = token?.toString();
         _isAuthenticated = true;
@@ -112,7 +120,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       // Web client ID (type 3) from google-services.json — needed to get idToken
       final GoogleSignInAccount? googleUser = await GoogleSignIn(
-        serverClientId: '664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com',
+        serverClientId:
+            '664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com',
         scopes: ['email', 'profile'],
       ).signIn();
 
@@ -125,8 +134,12 @@ class AuthProvider extends ChangeNotifier {
 
       if (response['success'] == true) {
         final token = response['data']?['token'] ?? response['token'];
-        final rawData = response['data'] is Map ? Map<String, dynamic>.from(response['data']) : <String, dynamic>{};
-        final userData = rawData.containsKey('user') ? rawData['user'] as Map<String, dynamic> : rawData;
+        final rawData = response['data'] is Map
+            ? Map<String, dynamic>.from(response['data'])
+            : <String, dynamic>{};
+        final userData = rawData.containsKey('user')
+            ? rawData['user'] as Map<String, dynamic>
+            : rawData;
         _user = User.fromJson(userData);
         _token = token?.toString();
         _isAuthenticated = true;
@@ -152,19 +165,27 @@ class AuthProvider extends ChangeNotifier {
     await _authService.sendOTP(phoneNumber);
   }
 
-  Future<void> verifyOTP(
-      {required String phoneNumber, required String otp}) async {
+  Future<void> verifyOTP({
+    required String phoneNumber,
+    required String otp,
+  }) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final response =
-          await _authService.verifyOTP(phoneNumber: phoneNumber, otp: otp);
+      final response = await _authService.verifyOTP(
+        phoneNumber: phoneNumber,
+        otp: otp,
+      );
 
       if (response['success'] == true) {
         final token = response['data']?['token'] ?? response['token'];
-        final rawData = response['data'] is Map ? Map<String, dynamic>.from(response['data']) : <String, dynamic>{};
-        final userData = rawData.containsKey('user') ? rawData['user'] as Map<String, dynamic> : rawData;
+        final rawData = response['data'] is Map
+            ? Map<String, dynamic>.from(response['data'])
+            : <String, dynamic>{};
+        final userData = rawData.containsKey('user')
+            ? rawData['user'] as Map<String, dynamic>
+            : rawData;
         _user = User.fromJson(userData);
         _token = token?.toString();
         _isAuthenticated = true;
@@ -198,7 +219,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> setHotelApproved(bool isApproved) async {
     _isHotelApproved = isApproved;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isHotelApproved', isApproved);
+    await prefs.setBool(AppConstants.isHotelApprovedKey, isApproved);
     notifyListeners();
   }
 
@@ -263,7 +284,8 @@ class AuthProvider extends ChangeNotifier {
       } else {
         // No hotel found (success=false or data is null/empty) - redirect to registration
         debugPrint(
-            'No hotel found or invalid response, redirecting to registration');
+          'No hotel found or invalid response, redirecting to registration',
+        );
         debugPrint('Response success: ${response['success']}');
         debugPrint('Response data: ${response['data']}');
         debugPrint('Response message: ${response['message']}');
@@ -342,7 +364,8 @@ class AuthProvider extends ChangeNotifier {
         final savedUserData = jsonDecode(userJson) as Map<String, dynamic>;
         _user = User.fromJson(savedUserData);
         _isAuthenticated = true;
-        _isHotelApproved = prefs.getBool('isHotelApproved') ?? false;
+        _isHotelApproved =
+            prefs.getBool(AppConstants.isHotelApprovedKey) ?? false;
         _setTokenForServices(token);
         notifyListeners();
 
@@ -487,7 +510,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _saveUserSession(
-      String token, Map<String, dynamic> userData) async {
+    String token,
+    Map<String, dynamic> userData,
+  ) async {
     try {
       _token = token; // Store token in provider
       final prefs = await SharedPreferences.getInstance();
@@ -506,7 +531,7 @@ class AuthProvider extends ChangeNotifier {
       await prefs.remove(AppConstants.authTokenKey);
       await prefs.remove(AppConstants.userKey);
       await prefs.remove(AppConstants.hotelKey);
-      await prefs.remove('isHotelApproved');
+      await prefs.remove(AppConstants.isHotelApprovedKey);
     } catch (e) {
       debugPrint('Error clearing user session: $e');
     }
@@ -527,4 +552,3 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
-

@@ -6,7 +6,8 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/bookings/presentation/screens/booking_management_screen.dart';
 import '../../features/earnings/presentation/screens/earnings_screen.dart';
-import '../../features/profile/presentation/screens/profile_screen.dart' as owner_profile;
+import '../../features/profile/presentation/screens/profile_screen.dart'
+    as owner_profile;
 
 class OwnerNavigation extends StatefulWidget {
   const OwnerNavigation({super.key});
@@ -38,11 +39,12 @@ class _OwnerNavigationState extends State<OwnerNavigation> {
   }
 
   // 4 tabs: Dashboard, Bookings, Earnings, Profile (QR FAB opens separate route)
-  static const _screens = [
-    DashboardScreen(),
-    BookingManagementScreen(),
-    EarningsScreen(),
-    owner_profile.ProfileScreen(),
+  // NOT const - screens must rebuild with fresh provider data on each navigation
+  final _screens = [
+    const DashboardScreen(),
+    const BookingManagementScreen(),
+    const EarningsScreen(),
+    const owner_profile.ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -59,14 +61,13 @@ class _OwnerNavigationState extends State<OwnerNavigation> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    debugPrint('🏠 OwnerNavigation: Building with selectedIndex: $_selectedIndex');
+
+    debugPrint(
+      '🏠 OwnerNavigation: Building with selectedIndex: $_selectedIndex',
+    );
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       // Floating QR button sits above the navbar
       floatingActionButton: _QrFab(onTap: _openQrScanner),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -107,7 +108,11 @@ class _QrFab extends StatelessWidget {
             ),
           ],
         ),
-        child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 26),
+        child: const Icon(
+          Icons.qr_code_scanner_rounded,
+          color: Colors.white,
+          size: 26,
+        ),
       ),
     );
   }
@@ -129,11 +134,21 @@ class _OwnerBottomNav extends StatelessWidget {
   // 4 real tabs — center slot is the FAB notch
   static const _leftItems = [
     _NavItem(Icons.dashboard_rounded, Icons.dashboard_outlined, 'Dashboard', 0),
-    _NavItem(Icons.calendar_today_rounded, Icons.calendar_today_outlined, 'Bookings', 1),
+    _NavItem(
+      Icons.calendar_today_rounded,
+      Icons.calendar_today_outlined,
+      'Bookings',
+      1,
+    ),
   ];
 
   static const _rightItems = [
-    _NavItem(Icons.account_balance_wallet_rounded, Icons.account_balance_wallet_outlined, 'Earnings', 2),
+    _NavItem(
+      Icons.account_balance_wallet_rounded,
+      Icons.account_balance_wallet_outlined,
+      'Earnings',
+      2,
+    ),
     _NavItem(Icons.person_rounded, Icons.person_outline_rounded, 'Profile', 3),
   ];
 
@@ -141,8 +156,10 @@ class _OwnerBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     const primary = Color(0xFFE60023);
-    
-    debugPrint('📱 OwnerBottomNav: Building with selectedIndex: $selectedIndex');
+
+    debugPrint(
+      '📱 OwnerBottomNav: Building with selectedIndex: $selectedIndex',
+    );
 
     return BottomAppBar(
       color: bg,
@@ -178,7 +195,9 @@ class _OwnerBottomNav extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isSelected ? primary.withOpacity(0.12) : Colors.transparent,
+                color: isSelected
+                    ? primary.withOpacity(0.12)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(

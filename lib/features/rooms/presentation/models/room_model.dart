@@ -23,47 +23,61 @@
     this.images = const [],
   });
 
-  factory Room.fromJson(Map<String, dynamic> j) => Room(
-        id: j['id']?.toString() ?? '',
-        roomNumber: j['room_number'] as String? ?? j['roomNumber'] as String? ?? '',
-        type: j['type'] as String? ?? j['room_type'] as String? ?? '',
-        status: j['status'] as String? ?? 'available',
-        capacity: (j['capacity'] as num?)?.toInt() ?? 1,
-        pricePerNight: (j['price_per_night'] as num?)?.toDouble() ??
-            (j['price'] as num?)?.toDouble() ?? 0.0,
-        hotelId: j['hotel_id']?.toString() ?? j['hotelId']?.toString(),
-        description: j['description'] as String?,
-        amenities: j['amenities'] is List
-            ? List<String>.from(j['amenities'])
-            : [],
-        images: j['images'] is List
-            ? List<String>.from(j['images'])
-            : [],
-      );
+  factory Room.fromJson(Map<String, dynamic> j) {
+    // Normalize - support both camelCase and snake_case
+    final String id = j['id']?.toString() ?? '';
+
+    String? extractString(String key, String altKey) {
+      return (j[key] ?? j[altKey])?.toString();
+    }
+
+    num? extractNum(String key, String altKey) {
+      return (j[key] ?? j[altKey]) as num?;
+    }
+
+    List<String> extractList(String key, String altKey) {
+      final val = j[key] ?? j[altKey];
+      if (val is List) return List<String>.from(val.map((e) => e.toString()));
+      return [];
+    }
+
+    return Room(
+      id: id,
+      roomNumber: extractString('room_number', 'roomNumber') ?? '',
+      type: extractString('type', 'room_type') ?? '',
+      status: extractString('status', 'status') ?? 'available',
+      capacity: (extractNum('capacity', 'capacity'))?.toInt() ?? 1,
+      pricePerNight: (extractNum('price_per_night', 'price') ?? 0.0).toDouble(),
+      hotelId: extractString('hotel_id', 'hotelId'),
+      description: extractString('description', 'description'),
+      amenities: extractList('amenities', 'amenities'),
+      images: extractList('images', 'images'),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'room_number': roomNumber,
-        'type': type,
-        'status': status,
-        'capacity': capacity,
-        'price_per_night': pricePerNight,
-        if (hotelId != null) 'hotel_id': hotelId,
-        if (description != null) 'description': description,
-        'amenities': amenities,
-        'images': images,
-      };
+    'id': id,
+    'room_number': roomNumber,
+    'type': type,
+    'status': status,
+    'capacity': capacity,
+    'price_per_night': pricePerNight,
+    if (hotelId != null) 'hotel_id': hotelId,
+    if (description != null) 'description': description,
+    'amenities': amenities,
+    'images': images,
+  };
 
   Room copyWith({String? status}) => Room(
-        id: id,
-        roomNumber: roomNumber,
-        type: type,
-        status: status ?? this.status,
-        capacity: capacity,
-        pricePerNight: pricePerNight,
-        hotelId: hotelId,
-        description: description,
-        amenities: amenities,
-        images: images,
-      );
+    id: id,
+    roomNumber: roomNumber,
+    type: type,
+    status: status ?? this.status,
+    capacity: capacity,
+    pricePerNight: pricePerNight,
+    hotelId: hotelId,
+    description: description,
+    amenities: amenities,
+    images: images,
+  );
 }
