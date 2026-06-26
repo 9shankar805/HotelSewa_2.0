@@ -34,11 +34,26 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
   Future<void> _load() async {
     final result = await _service.getTicketDetails(widget.ticketId);
+    final messagesResult = await _service.getTicketMessages(widget.ticketId);
     if (mounted) {
       if (result['success']) {
+        final ticket = result['data'] is Map ? result['data'] as Map<String, dynamic> : null;
+        List<Map<String, dynamic>> msgs = [];
+        if (messagesResult['success']) {
+          final data = messagesResult['data'];
+          if (data is List) {
+            msgs = data.map((m) => m as Map<String, dynamic>).toList();
+          } else if (data is Map) {
+            if (data['messages'] is List) {
+              msgs = (data['messages'] as List<dynamic>).map((m) => m as Map<String, dynamic>).toList();
+            } else if (data['data'] is List) {
+              msgs = (data['data'] as List<dynamic>).map((m) => m as Map<String, dynamic>).toList();
+            }
+          }
+        }
         setState(() {
-          _ticket = result['data'] is Map ? result['data'] as Map<String, dynamic> : null;
-          _messages = [];
+          _ticket = ticket;
+          _messages = msgs;
           _loading = false;
         });
       } else {
@@ -171,7 +186,10 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 16),
         itemBuilder: (_, i) {
           final msg = _messages[i];
-          final isMe = msg['isMe'] as bool? ?? false;
+          // Try to determine if message is from user
+          bool isMe = msg['isMe'] as bool? ?? msg['is_user'] as bool? ?? msg['sender_type'] == 'user' ?? false;
+          final messageText = msg['message']?.toString() ?? msg['content']?.toString() ?? '';
+          final timeStr = msg['time']?.toString() ?? msg['created_at']?.toString() ?? '';
           return Row(
             mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
@@ -185,9 +203,9 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   child: Column(
                     crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                     children: [
-                      Text(msg['message']?.toString() ?? '', style: TextStyle(fontSize: 14, color: isMe ? Colors.white : AppColors.darkGray)),
+                      Text(messageText, style: TextStyle(fontSize: 14, color: isMe ? Colors.white : AppColors.darkGray)),
                       const SizedBox(height: 4),
-                      Text(msg['time']?.toString() ?? '', style: TextStyle(fontSize: 11, color: isMe ? Colors.white70 : AppColors.placeholder)),
+                      Text(timeStr, style: TextStyle(fontSize: 11, color: isMe ? Colors.white70 : AppColors.placeholder)),
                     ],
                   ),
                 ),

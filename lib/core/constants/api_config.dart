@@ -334,6 +334,11 @@ class ApiConfig {
   static const String twoFaRecoveryOptionsEndpoint = '/2fa/recovery-options';
   static const String twoFaResetEndpoint = '/2fa/reset';
 
+  // ==================== 34a. ACTIVE SESSIONS ====================
+  static const String activeSessionsEndpoint = '/auth/sessions';
+  static const String revokeSessionEndpoint = '/auth/sessions'; // + /{id}/revoke
+  static const String revokeAllSessionsEndpoint = '/auth/sessions/revoke-all';
+
   // ==================== 35. RECOMMENDATIONS ====================
 
   static const String recommendationsTrendingEndpoint = '/recommendations/trending';

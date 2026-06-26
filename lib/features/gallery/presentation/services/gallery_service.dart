@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../../../../core/services/shared/api_service.dart';
 
 class GalleryService {
@@ -26,35 +27,49 @@ class GalleryService {
     throw Exception(response['message'] ?? 'Failed to fetch media');
   }
 
-  // POST /hotels/{hotelId}/gallery — upload images to gallery
-  static Future<Map<String, dynamic>> uploadImages(List<File> images, {required String hotelId}) async {
+  // POST /hotel-owner/media/images — upload images to gallery
+  static Future<Map<String, dynamic>> uploadImages(
+    List<File> images, {
+    required String hotelId,
+    String category = 'other',
+  }) async {
+    debugPrint('[GalleryService] Uploading ${images.length} image(s) to hotel $hotelId, category: $category');
+
     final response = await ApiService.uploadFiles(
-      '/hotels/$hotelId/gallery',
+      '/hotel-owner/media/images',
       images,
       token: _token,
-      fields: {'hotel_id': hotelId},  // Include hotel_id as form field too
+      fields: {
+        'hotel_id': hotelId,
+        'category': category,
+      },
+      fieldName: 'images',
+      useIndexedFieldNames: true,
     );
-    if (response['success'] == true) return response['data'] ?? {};
+
+    if (response['success'] == true) return {'data': response['data'] ?? []};
     throw Exception(response['message'] ?? 'Failed to upload images');
   }
 
   // POST /hotel-owner/media/video — upload video file
-  static Future<Map<String, dynamic>> uploadVideo(File video) async {
+  static Future<Map<String, dynamic>> uploadVideo(File video, {required String hotelId}) async {
     final response = await ApiService.uploadFile(
       '/hotel-owner/media/video',
       video,
       token: _token,
+      fields: {'hotel_id': hotelId},
+      fieldName: 'video',
     );
     if (response['success'] == true) return response['data'] ?? {};
     throw Exception(response['message'] ?? 'Failed to upload video');
   }
 
   // POST /hotel-owner/media/video-link — add video link
-  static Future<Map<String, dynamic>> addVideoLink(String url) async {
+  static Future<Map<String, dynamic>> addVideoLink(String url, {required String hotelId}) async {
     final response = await ApiService.post(
       '/hotel-owner/media/video-link',
       token: _token,
-      data: {'url': url},
+      data: {'url': url, 'hotel_id': hotelId, 'video_url': url},
     );
     if (response['success'] == true) return response['data'] ?? {};
     throw Exception(response['message'] ?? 'Failed to add video link');

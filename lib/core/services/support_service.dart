@@ -53,6 +53,22 @@ class SupportService {
     }
   }
 
+  // GET /support/tickets/{id}/messages - Get ticket messages
+  Future<Map<String, dynamic>> getTicketMessages(String ticketId) async {
+    try {
+      final token = await _getToken();
+      final response = await ApiService.get(
+        ApiConfig.buildPath(ApiConfig.supportTicketDetailEndpoint, '$ticketId/messages'),
+        token: token,
+      );
+      return response['success'] == true
+          ? {'success': true, 'data': response['data']}
+          : {'success': false, 'message': response['message'] ?? 'Failed to load messages'};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to load messages'};
+    }
+  }
+
   // POST /support/tickets/{id}/messages - Add message to ticket
   Future<Map<String, dynamic>> addTicketMessage({
     required String ticketId,

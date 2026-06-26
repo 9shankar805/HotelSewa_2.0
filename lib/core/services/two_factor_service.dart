@@ -272,4 +272,46 @@ class TwoFactorService {
       return {'success': false, 'message': 'Failed to reset 2FA'};
     }
   }
+
+  // Get active sessions
+  Future<Map<String, dynamic>> getActiveSessions() async {
+    try {
+      final token = await _getToken();
+      final response = await ApiService.get(ApiConfig.activeSessionsEndpoint, token: token);
+      return response['success'] == true
+          ? {'success': true, 'sessions': response['data']}
+          : {'success': false, 'message': response['message'] ?? 'Failed to load sessions'};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to load sessions'};
+    }
+  }
+
+  // Revoke a session
+  Future<Map<String, dynamic>> revokeSession(String sessionId) async {
+    try {
+      final token = await _getToken();
+      final response = await ApiService.post(
+        ApiConfig.buildPath(ApiConfig.revokeSessionEndpoint, '$sessionId/revoke'),
+        token: token,
+      );
+      return response['success'] == true
+          ? {'success': true, 'message': 'Session revoked successfully'}
+          : {'success': false, 'message': response['message'] ?? 'Failed to revoke session'};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to revoke session'};
+    }
+  }
+
+  // Revoke all sessions except current
+  Future<Map<String, dynamic>> revokeAllSessions() async {
+    try {
+      final token = await _getToken();
+      final response = await ApiService.post(ApiConfig.revokeAllSessionsEndpoint, token: token);
+      return response['success'] == true
+          ? {'success': true, 'message': 'All sessions revoked successfully'}
+          : {'success': false, 'message': response['message'] ?? 'Failed to revoke sessions'};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to revoke sessions'};
+    }
+  }
 }

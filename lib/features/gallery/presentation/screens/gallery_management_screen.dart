@@ -1,10 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../hotel/presentation/services/hotel_service.dart';
 import '../services/gallery_service.dart';
 import 'video_tour_screen.dart';
@@ -18,13 +17,28 @@ class _PhotoCategory {
 }
 
 const _photoCategories = [
-  _PhotoCategory(id: 'all', name: 'All Photos', icon: Icons.photo_library),
-  _PhotoCategory(id: 'exterior', name: 'Exterior', icon: Icons.apartment),
-  _PhotoCategory(id: 'rooms', name: 'Rooms', icon: Icons.bed),
-  _PhotoCategory(id: 'restaurant', name: 'Restaurant', icon: Icons.restaurant),
-  _PhotoCategory(id: 'pool', name: 'Pool', icon: Icons.pool),
-  _PhotoCategory(id: 'common', name: 'Common Areas', icon: Icons.chair),
+  _PhotoCategory(id: 'all',        name: 'All Photos',  icon: Icons.photo_library),
+  _PhotoCategory(id: 'exterior',   name: 'Exterior',    icon: Icons.apartment),
+  _PhotoCategory(id: 'rooms',      name: 'Rooms',       icon: Icons.bed),
+  _PhotoCategory(id: 'restaurant', name: 'Restaurant',  icon: Icons.restaurant),
+  _PhotoCategory(id: 'lobby',      name: 'Lobby',       icon: Icons.chair),
+  _PhotoCategory(id: 'other',      name: 'Other',       icon: Icons.more_horiz),
 ];
+
+/// Maps any app-side category id to a valid API category value.
+String _toApiCategory(String cat) {
+  const map = {
+    'all':        'other',
+    'common':     'lobby',
+    'pool':       'other',
+    'exterior':   'exterior',
+    'rooms':      'rooms',
+    'restaurant': 'restaurant',
+    'lobby':      'lobby',
+    'other':      'other',
+  };
+  return map[cat] ?? 'other';
+}
 
 class GalleryManagementScreen extends StatefulWidget {
   const GalleryManagementScreen({super.key});
@@ -48,10 +62,15 @@ class _GalleryManagementScreenState extends State<GalleryManagementScreen> {
     _load();
   }
 
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('authToken');
+  }
+
   Future<void> _load() async {
     setState(() => _isLoading = true);
     try {
-      final token = Provider.of<AuthProvider>(context, listen: false).token;
+      final token = await _getToken();
       if (token != null) {
         GalleryService.setToken(token);
         HotelService.setToken(token);
@@ -59,12 +78,15 @@ class _GalleryManagementScreenState extends State<GalleryManagementScreen> {
         // Get hotel ID first
         final hotelService = HotelService();
         final hotelResponse = await hotelService.getHotelStatus();
+        debugPrint('[GalleryManagement] Hotel response: $hotelResponse');
         if (hotelResponse['success'] == true && hotelResponse['data'] != null) {
           _hotelId = hotelResponse['data']['id']?.toString();
+          debugPrint('[GalleryManagement] Set hotel ID: $_hotelId');
         }
         
         // Use the media endpoint instead
         final mediaData = await GalleryService.getMedia();
+        debugPrint('[GalleryManagement] Media data: $mediaData');
         
         final List<Map<String, dynamic>> photosList = [];
         
@@ -76,7 +98,7 @@ class _GalleryManagementScreenState extends State<GalleryManagementScreen> {
               final img = images[i];
               photosList.add({
                 'url': img['url'] ?? img['path'] ?? img.toString(),
-                'category': _assignCategory(i),
+                'category': img['category'] ?? _assignCategory(i),
                 'index': i,
                 'id': img['id'],
               });
@@ -93,7 +115,7 @@ class _GalleryManagementScreenState extends State<GalleryManagementScreen> {
   }
 
   String _assignCategory(int index) {
-    const cats = ['exterior', 'rooms', 'restaurant', 'pool', 'common'];
+    const cats = ['exterior', 'rooms', 'restaurant', 'lobby', 'other'];
     return cats[index % cats.length];
   }
 
@@ -104,31 +126,61 @@ class _GalleryManagementScreenState extends State<GalleryManagementScreen> {
 
   void _toggleDeleteMode() => setState(() { _isDeleteMode = !_isDeleteMode; _selectedForDelete.clear(); });
 
-  void _deleteSelected() {
-    showDialog(
+  Future<void> _deleteSelected() async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Delete Photos', style: TextStyle(fontWeight: FontWeight.w700)),
         content: Text('Delete ${_selectedForDelete.length} selected photo(s)?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() { _photos.removeWhere((p) => _selectedForDelete.contains(p['index'])); _selectedForDelete.clear(); _isDeleteMode = false; });
-            },
+            onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: const Color(AppConstants.errorRed), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
             child: const Text('Delete'),
           ),
         ],
       ),
     );
+    
+    if (confirmed == true) {
+      try {
+        final token = await _getToken();
+        if (token != null) {
+          GalleryService.setToken(token);
+          for (int i in _selectedForDelete) {
+            final photo = _photos[i];
+            if (photo['id'] != null) {
+              await GalleryService.deleteMedia(photo['id']!.toString());
+            }
+          }
+          
+          if (mounted) {
+            setState(() {
+              _photos.removeWhere((p) => _selectedForDelete.contains(p['index']));
+              _selectedForDelete.clear();
+              _isDeleteMode = false;
+            });
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Delete failed: $e'),
+            backgroundColor: const Color(AppConstants.errorRed),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ));
+        }
+      }
+    }
   }
 
   Future<void> _pickAndUploadPhotos() async {
     try {
       // Check if hotel ID is available
+      debugPrint('[GalleryManagement] Attempting upload, hotelId is $_hotelId');
       if (_hotelId == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -147,6 +199,7 @@ class _GalleryManagementScreenState extends State<GalleryManagementScreen> {
         imageQuality: 85,
       );
 
+      debugPrint('[GalleryManagement] Picked ${pickedFiles.length} file(s)');
       if (pickedFiles.isEmpty) return;
 
       setState(() => _isUploading = true);
@@ -155,10 +208,14 @@ class _GalleryManagementScreenState extends State<GalleryManagementScreen> {
       final List<File> imageFiles = pickedFiles.map((xFile) => File(xFile.path)).toList();
 
       // Upload images with hotel_id
-      final token = Provider.of<AuthProvider>(context, listen: false).token;
+      final token = await _getToken();
       if (token != null) {
         GalleryService.setToken(token);
-        await GalleryService.uploadImages(imageFiles, hotelId: _hotelId!);
+        await GalleryService.uploadImages(
+          imageFiles,
+          hotelId: _hotelId!,
+          category: _toApiCategory(_selectedCategory),
+        );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -174,6 +231,7 @@ class _GalleryManagementScreenState extends State<GalleryManagementScreen> {
         }
       }
     } catch (e) {
+      debugPrint('[GalleryManagement] Upload error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

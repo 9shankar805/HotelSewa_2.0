@@ -25,6 +25,17 @@ class ApiService {
     return {..._baseHeaders, 'Authorization': 'Bearer $token'};
   }
 
+  /// Headers for multipart/file upload requests.
+  /// Must NOT include Content-Type — the http package sets it automatically
+  /// with the correct multipart boundary.
+  static Map<String, String> _getMultipartHeaders(String? token) {
+    final headers = {'Accept': 'application/json'};
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
+
   /// Returns the stored auth token from SharedPreferences.
   static Future<String?> getStoredToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -138,9 +149,30 @@ class ApiService {
   }) async {
     try {
       final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$endpoint'));
-      request.headers.addAll(_getHeaders(token));
+      request.headers.addAll(_getMultipartHeaders(token));
       if (fields != null) request.fields.addAll(fields);
-      request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
+      final ext = file.path.toLowerCase();
+      final mimeType = ext.endsWith('.jpg') || ext.endsWith('.jpeg')
+          ? 'image/jpeg'
+          : ext.endsWith('.png')
+              ? 'image/png'
+              : ext.endsWith('.gif')
+                  ? 'image/gif'
+                  : ext.endsWith('.webp')
+                      ? 'image/webp'
+                      : ext.endsWith('.mp4')
+                          ? 'video/mp4'
+                          : ext.endsWith('.mov')
+                              ? 'video/quicktime'
+                              : 'image/jpeg';
+      final bytes = await file.readAsBytes();
+      final filename = file.path.split('/').last;
+      request.files.add(http.MultipartFile.fromBytes(
+        fieldName,
+        bytes,
+        filename: filename,
+        contentType: http.MediaType.parse(mimeType),
+      ));
       final response = await http.Response.fromStream(await request.send());
       return _handleResponse(response);
     } catch (e) {
@@ -153,17 +185,55 @@ class ApiService {
     List<File> files, {
     String? token,
     Map<String, String>? fields,
+    String fieldName = 'images',
+    bool useIndexedFieldNames = false,
   }) async {
     try {
-      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$endpoint'));
-      request.headers.addAll(_getHeaders(token));
+      final uri = Uri.parse('$baseUrl$endpoint');
+      debugPrint('[API] Uploading files to $uri');
+      debugPrint('[API] Number of files: ${files.length}');
+      debugPrint('[API] Fields: $fields');
+      debugPrint('[API] Field name: $fieldName');
+      debugPrint('[API] Use indexed field names: $useIndexedFieldNames');
+      
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(_getMultipartHeaders(token));
       if (fields != null) request.fields.addAll(fields);
-      for (final file in files) {
-        request.files.add(await http.MultipartFile.fromPath('images[]', file.path));
+      for (var i = 0; i < files.length; i++) {
+        final file = files[i];
+        final name = useIndexedFieldNames ? '$fieldName[$i]' : fieldName;
+        debugPrint('[API] Adding file: ${file.path} with field name: $name');
+        final ext = file.path.toLowerCase();
+        final mimeType = ext.endsWith('.jpg') || ext.endsWith('.jpeg')
+            ? 'image/jpeg'
+            : ext.endsWith('.png')
+                ? 'image/png'
+                : ext.endsWith('.gif')
+                    ? 'image/gif'
+                    : ext.endsWith('.webp')
+                        ? 'image/webp'
+                        : ext.endsWith('.mp4')
+                            ? 'video/mp4'
+                            : ext.endsWith('.mov')
+                                ? 'video/quicktime'
+                                : 'image/jpeg'; // default to jpeg for images
+        // Read bytes directly to avoid path-encoding issues on iOS
+        final bytes = await file.readAsBytes();
+        final filename = file.path.split('/').last;
+        request.files.add(http.MultipartFile.fromBytes(
+          name,
+          bytes,
+          filename: filename,
+          contentType: http.MediaType.parse(mimeType),
+        ));
       }
+      
       final response = await http.Response.fromStream(await request.send());
+      debugPrint('[API] Upload response status code: ${response.statusCode}');
+      debugPrint('[API] Upload response body: ${response.body}');
       return _handleResponse(response);
     } catch (e) {
+      debugPrint('[API] Upload error: $e');
       return {'success': false, 'message': 'Upload error: $e'};
     }
   }

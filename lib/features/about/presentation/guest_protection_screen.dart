@@ -47,7 +47,7 @@ class _GuestProtectionScreenState extends State<GuestProtectionScreen> {
       backgroundColor: const Color(0xFFF5F6FA),
       body: CustomScrollView(slivers: [
         SliverAppBar(
-          expandedHeight: 200,
+          expandedHeight: 220, // Increased to fix overflow
           pinned: true,
           backgroundColor: AppColors.primary,
           automaticallyImplyLeading: false,

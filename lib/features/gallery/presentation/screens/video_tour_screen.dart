@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/skeleton_loader.dart';
+import '../../../../features/hotel/presentation/services/hotel_service.dart';
+import '../services/gallery_service.dart';
 
 class VideoTourScreen extends StatefulWidget {
   const VideoTourScreen({super.key});
@@ -11,14 +16,71 @@ class VideoTourScreen extends StatefulWidget {
 
 class _VideoTourScreenState extends State<VideoTourScreen> {
   bool _isLoading = false;
-  final List<Map<String, dynamic>> _videos = [
-    {'id': '1', 'title': 'Hotel Lobby Tour', 'duration': '1:24', 'size': '45 MB', 'thumbnail': null, 'uploaded': true, 'category': 'Lobby'},
-    {'id': '2', 'title': 'Deluxe Room Walkthrough', 'duration': '2:10', 'size': '78 MB', 'thumbnail': null, 'uploaded': true, 'category': 'Rooms'},
-    {'id': '3', 'title': 'Rooftop Restaurant', 'duration': '0:58', 'size': '32 MB', 'thumbnail': null, 'uploaded': false, 'category': 'Dining'},
-  ];
+  bool _isUploading = false;
+  List<Map<String, dynamic>> _videos = [];
+  String? _hotelId;
 
   final _categories = ['All', 'Lobby', 'Rooms', 'Dining', 'Pool', 'Exterior'];
   String _selectedCategory = 'All';
+
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVideos();
+  }
+
+  Future<void> _loadVideos() async {
+    setState(() => _isLoading = true);
+    try {
+      final token = await _getToken();
+      if (token != null) {
+        GalleryService.setToken(token);
+
+        // Load hotel ID if not yet fetched
+        if (_hotelId == null) {
+          HotelService.setToken(token);
+          final hotelResp = await HotelService().getHotelStatus();
+          if (hotelResp['success'] == true && hotelResp['data'] != null) {
+            _hotelId = hotelResp['data']['id']?.toString();
+            debugPrint('[VideoTour] Hotel ID: $_hotelId');
+          }
+        }
+        final mediaData = await GalleryService.getMedia();
+        final List<Map<String, dynamic>> videosList = [];
+
+        if (mediaData['videos'] != null) {
+          final videos = mediaData['videos'];
+          if (videos is List) {
+            for (var i = 0; i < videos.length; i++) {
+              final vid = videos[i];
+              videosList.add({
+                'id': vid['id']?.toString() ?? i.toString(),
+                'title': vid['title'] ?? vid['name'] ?? 'Untitled Video',
+                'duration': vid['duration'] ?? '0:00',
+                'size': vid['size'] ?? '0 MB',
+                'thumbnail': vid['thumbnail'] ?? vid['url'],
+                'uploaded': vid['published'] ?? vid['uploaded'] ?? true,
+                'category': vid['category'] ?? 'Lobby',
+                'url': vid['url'],
+              });
+            }
+          }
+        }
+        if (mounted) setState(() => _videos = videosList);
+      }
+    } catch (e) {
+      debugPrint('Error loading videos: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('authToken');
+  }
 
   List<Map<String, dynamic>> get _filtered => _selectedCategory == 'All'
       ? _videos
@@ -32,82 +94,96 @@ class _VideoTourScreenState extends State<VideoTourScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Video & Virtual Tour')),
-      body: Column(
-        children: [
-          // Upload banner
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)]),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
+      body: _isLoading
+          ? _buildSkeleton()
+          : Column(
               children: [
+                // Upload banner
                 Container(
-                  width: 48, height: 48,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.videocam_rounded, color: Colors.white, size: 24),
-                ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)]),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
                     children: [
-                      Text('Virtual Tour', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
-                      Text('Videos increase bookings by up to 40%', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                      Container(
+                        width: 48, height: 48,
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                        child: const Icon(Icons.videocam_rounded, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Virtual Tour', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                            Text('Videos increase bookings by up to 40%', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _isUploading ? null : _pickVideo,
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('Add', style: TextStyle(fontSize: 13)),
+                        style: ElevatedButton.styleFrom(backgroundColor: Color(AppConstants.primaryRed), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0),
+                      ),
                     ],
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: _pickVideo,
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('Add', style: TextStyle(fontSize: 13)),
-                  style: ElevatedButton.styleFrom(backgroundColor: Color(AppConstants.primaryRed), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), elevation: 0),
+
+                // Category filter
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _categories.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final sel = _selectedCategory == _categories[i];
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedCategory = _categories[i]),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: sel ? Color(AppConstants.primaryRed) : card,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: sel ? Color(AppConstants.primaryRed) : border),
+                          ),
+                          child: Center(child: Text(_categories[i], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? Colors.white : Color(AppConstants.mediumGray)))),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Video list
+                Expanded(
+                  child: _filtered.isEmpty
+                      ? _emptyState(isDark)
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _filtered.length,
+                          itemBuilder: (_, i) => _videoCard(_filtered[i], isDark, card, border),
+                        ),
                 ),
               ],
             ),
-          ),
+    );
+  }
 
-          // Category filter
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, i) {
-                final sel = _selectedCategory == _categories[i];
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedCategory = _categories[i]),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: sel ? Color(AppConstants.primaryRed) : card,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: sel ? Color(AppConstants.primaryRed) : border),
-                    ),
-                    child: Center(child: Text(_categories[i], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? Colors.white : Color(AppConstants.mediumGray)))),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Video list
-          Expanded(
-            child: _filtered.isEmpty
-                ? _emptyState(isDark)
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _filtered.length,
-                    itemBuilder: (_, i) => _videoCard(_filtered[i], isDark, card, border),
-                  ),
-          ),
-        ],
+  Widget _buildSkeleton() {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, __) => SkeletonLoader(
+        height: 104,
+        borderRadius: 16,
       ),
     );
   }
@@ -124,24 +200,35 @@ class _VideoTourScreenState extends State<VideoTourScreen> {
             borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
             child: Container(
               width: 100, height: 80,
-              color: isDark ? const Color(0xFF2C2C2C) : Color(AppConstants.lightGray),
+              decoration: v['thumbnail']?.toString().startsWith('http') ?? false
+                  ? BoxDecoration(
+                      image: DecorationImage(
+                        image: NetworkImage(v['thumbnail']!),
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : BoxDecoration(
+                      color: isDark ? const Color(0xFF2C2C2C) : Color(AppConstants.lightGray),
+                    ),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  Icon(Icons.movie_rounded, size: 32, color: isDark ? Colors.white24 : Colors.black12),
+                  if (!(v['thumbnail']?.toString().startsWith('http') ?? false))
+                    Icon(Icons.movie_rounded, size: 32, color: isDark ? Colors.white24 : Colors.black12),
                   Container(
                     width: 36, height: 36,
-                    decoration: BoxDecoration(color: AppColors.gray, borderRadius: BorderRadius.circular(18)),
+                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(18)),
                     child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 22),
                   ),
-                  Positioned(
-                    bottom: 4, right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(color: AppColors.gray, borderRadius: BorderRadius.circular(4)),
-                      child: Text(v['duration'] as String, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                  if (v['duration'] != null)
+                    Positioned(
+                      bottom: 4, right: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(color: AppColors.gray, borderRadius: BorderRadius.circular(4)),
+                        child: Text(v['duration'] as String, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -178,7 +265,7 @@ class _VideoTourScreenState extends State<VideoTourScreen> {
                       ),
                       const Spacer(),
                       GestureDetector(
-                        onTap: () => setState(() => v['uploaded'] = !uploaded),
+                        onTap: () => _togglePublished(v),
                         child: Icon(uploaded ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: Color(AppConstants.mediumGray)),
                       ),
                       const SizedBox(width: 12),
@@ -207,7 +294,7 @@ class _VideoTourScreenState extends State<VideoTourScreen> {
           Text('No videos in this category', style: TextStyle(fontSize: 16, color: AppColors.gray[400])),
           const SizedBox(height: 8),
           ElevatedButton.icon(
-            onPressed: _pickVideo,
+            onPressed: _isUploading ? null : _pickVideo,
             icon: const Icon(Icons.add_rounded),
             label: const Text('Upload Video'),
             style: ElevatedButton.styleFrom(backgroundColor: Color(AppConstants.primaryRed), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
@@ -229,11 +316,11 @@ class _VideoTourScreenState extends State<VideoTourScreen> {
           children: [
             const Text('Add Video', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
-            _sourceOption(Icons.videocam_rounded, 'Record Video', 'Use your camera to record a tour', Color(AppConstants.primaryRed)),
+            _sourceOption(Icons.videocam_rounded, 'Record Video', 'Use your camera to record a tour', Color(AppConstants.primaryRed), ImageSource.camera),
             const SizedBox(height: 10),
-            _sourceOption(Icons.photo_library_rounded, 'Choose from Gallery', 'Select an existing video', const Color(0xFF1890FF)),
+            _sourceOption(Icons.photo_library_rounded, 'Choose from Gallery', 'Select an existing video', const Color(0xFF1890FF), ImageSource.gallery),
             const SizedBox(height: 10),
-            _sourceOption(Icons.link_rounded, 'Add YouTube/Vimeo Link', 'Paste a video URL', Color(AppConstants.successGreen)),
+            _sourceOption(Icons.link_rounded, 'Add YouTube/Vimeo Link', 'Paste a video URL', Color(AppConstants.successGreen), null),
             const SizedBox(height: 8),
             const Text('Max file size: 500 MB • Supported: MP4, MOV, AVI', style: TextStyle(fontSize: 11, color: Color(AppConstants.mediumGray))),
           ],
@@ -242,11 +329,15 @@ class _VideoTourScreenState extends State<VideoTourScreen> {
     );
   }
 
-  Widget _sourceOption(IconData icon, String title, String subtitle, Color color) {
+  Widget _sourceOption(IconData icon, String title, String subtitle, Color color, ImageSource? source) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         Navigator.pop(context);
-        _simulateUpload();
+        if (source != null) {
+          await _pickAndUploadVideo(source);
+        } else {
+          await _addVideoLink();
+        }
       },
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -275,37 +366,176 @@ class _VideoTourScreenState extends State<VideoTourScreen> {
     );
   }
 
-  void _simulateUpload() {
-    setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 2), () {
+  Future<void> _pickAndUploadVideo(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickVideo(source: source);
+      if (pickedFile == null) return;
+
+      if (_hotelId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Hotel ID not found. Please try again.'),
+            backgroundColor: Color(AppConstants.errorRed),
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+        return;
+      }
+
+      setState(() => _isUploading = true);
+
+      final token = await _getToken();
+      if (token != null) {
+        GalleryService.setToken(token);
+        await GalleryService.uploadVideo(File(pickedFile.path), hotelId: _hotelId!);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Video uploaded successfully'),
+            backgroundColor: Color(AppConstants.successGreen),
+            behavior: SnackBarBehavior.floating,
+          ));
+          await _loadVideos();
+        }
+      }
+    } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _videos.add({'id': '${_videos.length + 1}', 'title': 'New Video Tour', 'duration': '1:30', 'size': '55 MB', 'thumbnail': null, 'uploaded': false, 'category': _selectedCategory == 'All' ? 'Lobby' : _selectedCategory});
-        });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Video uploaded successfully'), backgroundColor: Color(AppConstants.successGreen),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Upload failed: $e'),
+          backgroundColor: Color(AppConstants.errorRed),
           behavior: SnackBarBehavior.floating,
         ));
       }
-    });
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
   }
 
-  void _deleteVideo(Map<String, dynamic> v) {
-    showDialog(
+  Future<void> _addVideoLink() async {
+    final TextEditingController urlController = TextEditingController();
+    bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Video Link'),
+        content: TextField(
+          controller: urlController,
+          decoration: const InputDecoration(hintText: 'Enter YouTube/Vimeo URL'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Color(AppConstants.primaryRed)),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed == true && urlController.text.trim().isNotEmpty) {
+      try {
+        if (_hotelId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Hotel ID not found. Please try again.'),
+            backgroundColor: Color(AppConstants.errorRed),
+            behavior: SnackBarBehavior.floating,
+          ));
+          return;
+        }
+        setState(() => _isUploading = true);
+        final token = await _getToken();
+        if (token != null) {
+          GalleryService.setToken(token);
+          await GalleryService.addVideoLink(
+            urlController.text.trim(),
+            hotelId: _hotelId!,
+          );
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Video link added successfully'),
+              backgroundColor: Color(AppConstants.successGreen),
+              behavior: SnackBarBehavior.floating,
+            ));
+            await _loadVideos();
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Failed to add link: $e'),
+            backgroundColor: Color(AppConstants.errorRed),
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  Future<void> _togglePublished(Map<String, dynamic> v) async {
+    try {
+      final token = await _getToken();
+      if (token != null) {
+        GalleryService.setToken(token);
+        await GalleryService.updateMedia(
+          v['id']!.toString(),
+          {'published': !(v['uploaded'] as bool)},
+        );
+        
+        if (mounted) {
+          setState(() => v['uploaded'] = !v['uploaded']);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to update video: $e'),
+          backgroundColor: Color(AppConstants.errorRed),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
+  }
+
+  Future<void> _deleteVideo(Map<String, dynamic> v) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete Video?'),
         content: Text('Delete "${v['title']}"? This cannot be undone.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () { Navigator.pop(context); setState(() => _videos.remove(v)); },
+            onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Color(AppConstants.errorRed)),
             child: const Text('Delete'),
           ),
         ],
       ),
     );
+    
+    if (confirmed == true) {
+      try {
+        final token = await _getToken();
+        if (token != null) {
+          GalleryService.setToken(token);
+          await GalleryService.deleteMedia(v['id']!.toString());
+          
+          if (mounted) {
+            setState(() => _videos.removeWhere((vid) => vid['id'] == v['id']));
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Failed to delete video: $e'),
+            backgroundColor: Color(AppConstants.errorRed),
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+      }
+    }
   }
 }
