@@ -645,33 +645,44 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
             if (_images.isNotEmpty) Positioned(
               top: 100,
               right: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PhotoGalleryScreen(
+                      images: _images,
+                      initialIndex: _currentImageIndex,
                     ),
-                  ],
+                  ),
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.touch_app_rounded, size: 14, color: AppColors.primary),
-                    SizedBox(width: 4),
-                    Text(
-                      'Tap to view gallery',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.touch_app_rounded, size: 14, color: AppColors.primary),
+                      SizedBox(width: 4),
+                      Text(
+                        'Tap to view gallery',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ).animate().fadeIn(duration: 800.ms, delay: 1000.ms).slideX(begin: 0.3),
@@ -1864,7 +1875,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
       left: 0,
       right: 0,
       child: Container(
-        padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).padding.bottom + 20),
+        padding: EdgeInsets.fromLTRB(16, 14, 16, MediaQuery.of(context).padding.bottom + 14),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -1882,10 +1893,11 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
           ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Enhanced price info
-            Expanded(
-              flex: 2,
+            // Price info — fixed width so it never crowds the buttons
+            SizedBox(
+              width: 130,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -1893,76 +1905,67 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                   const Text(
                     'Starting from',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: AppColors.gray,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        'NPR $startingPrice',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primary,
-                          letterSpacing: -0.5,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          'NPR $startingPrice',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primary,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                      ),
-                      const Text(
-                        ' /night',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.gray,
-                          fontWeight: FontWeight.w500,
+                        const Text(
+                          ' /night',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.gray,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   if (hourlyPrice != null)
-                    Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.info.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                    Text(
+                      'NPR $hourlyPrice/hr',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.info[600],
+                        fontWeight: FontWeight.w600,
                       ),
-                      child: Text(
-                        '? NPR $hourlyPrice/hr available',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.info,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),
             ),
-            const SizedBox(width: 16),
-            // Enhanced Book Night button
+            const SizedBox(width: 12),
+            // Book Night button
             Expanded(
-              flex: 3,
               child: GestureDetector(
                 onTap: _bookNow,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.primary.withOpacity(0.4),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
-                      ),
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -1970,15 +1973,15 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(Icons.hotel_rounded, color: AppColors.white, size: 18),
-                      SizedBox(width: 8),
+                      Icon(Icons.hotel_rounded, color: AppColors.white, size: 17),
+                      SizedBox(width: 7),
                       Text(
                         'Book Night',
                         style: TextStyle(
                           color: AppColors.white,
                           fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          letterSpacing: 0.3,
+                          fontSize: 15,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ],
@@ -1986,42 +1989,33 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                 ),
               ),
             ),
-            // Enhanced Book Hourly button (only if supported)
+            // Hourly button — only if supported
             if (hourlyRoom != null) ...[
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: GestureDetector(
-                  onTap: () => _bookHourly(room: hourlyRoom),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.info.withOpacity(0.1),
-                          AppColors.info.withOpacity(0.15),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.info.withOpacity(0.4), width: 1.5),
-                    ),
-                    alignment: Alignment.center,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.access_time_rounded, color: AppColors.info, size: 16),
-                        SizedBox(width: 6),
-                        Text(
-                          'Hourly',
-                          style: TextStyle(
-                            color: AppColors.info,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
-                            letterSpacing: 0.2,
-                          ),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () => _bookHourly(room: hourlyRoom),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.info.withOpacity(0.4), width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.access_time_rounded, color: AppColors.info, size: 16),
+                      SizedBox(width: 5),
+                      Text(
+                        'Hourly',
+                        style: TextStyle(
+                          color: AppColors.info,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),

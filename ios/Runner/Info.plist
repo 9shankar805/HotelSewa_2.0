@@ -70,5 +70,42 @@
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+
+		<!-- Google Sign-In URL scheme (REVERSED_CLIENT_ID from GoogleService-Info.plist) -->
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.664870792174-jvd5i82d0hi2ba1b3j1ifvs61s6s8pqi</string>
+				</array>
+			</dict>
+		</array>
+
+		<!-- Camera — required by mobile_scanner (QR) and image_picker -->
+		<key>NSCameraUsageDescription</key>
+		<string>HotelSewa needs camera access to scan QR codes and upload photos.</string>
+
+		<!-- Photo Library — required by image_picker -->
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>HotelSewa needs photo library access to upload hotel and profile photos.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>HotelSewa needs permission to save photos to your library.</string>
+
+		<!-- Location — required by geolocator and google_maps_flutter -->
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>HotelSewa uses your location to find nearby hotels and show your position on the map.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>HotelSewa uses your location to find nearby hotels and show your position on the map.</string>
+
+		<!-- Face ID / Biometric — required by local_auth -->
+		<key>NSFaceIDUsageDescription</key>
+		<string>HotelSewa uses Face ID to securely authenticate your account.</string>
+
+		<!-- Microphone — required by some QR/camera plugins -->
+		<key>NSMicrophoneUsageDescription</key>
+		<string>HotelSewa needs microphone access for video features.</string>
 	</dict>
 </plist>
