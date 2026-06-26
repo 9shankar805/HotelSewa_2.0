@@ -53,8 +53,9 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final route = await auth.checkHotelStatusAndNavigate();
       if (!mounted) return;
+      // checkHotelStatusAndNavigate already persists user_role + hotelId
       switch (route) {
-        case 'dashboard': context.go(AppConstants.dashboardScreen); break;
+        case 'dashboard': context.go('/owner/dashboard'); break;
         case 'pending': context.go(AppConstants.hotelPendingApprovalScreen); break;
         default: context.go(AppConstants.hotelRegistrationScreen);
       }

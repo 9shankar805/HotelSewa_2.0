@@ -52,6 +52,7 @@ import '../../../../core/services/owner/dashboard_service.dart'
 import '../../../../core/services/owner/earnings_service.dart'
     as owner_earnings;
 import '../../../../core/services/owner/currency_service.dart';
+import '../../../../core/services/shared/api_service.dart' as shared_api;
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
@@ -269,6 +270,15 @@ class AuthProvider extends ChangeNotifier {
         // Update hotel approval status
         await setHotelApproved(status == 'APPROVED' || status == 'ACTIVE');
 
+        // Persist hotelId and role for services / splash restore
+        final prefs = await SharedPreferences.getInstance();
+        final hotelId = response['data']['id']?.toString() ?? '';
+        if (hotelId.isNotEmpty) {
+          await prefs.setString('hotelId', hotelId);
+          await prefs.setString('hotel_id', hotelId);
+        }
+        await prefs.setString('user_role', 'hotel_owner');
+
         // Return appropriate route based on status
         if (status == 'APPROVED' || status == 'ACTIVE') {
           debugPrint('Hotel approved, redirecting to dashboard');
@@ -370,8 +380,14 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
 
         // Validate token with server and refresh user data
+        // Suppress onSessionExpired during startup validation to avoid
+        // redirect loops while the splash/auth flow is still running
         try {
+          final savedCallback = shared_api.ApiService.onSessionExpired;
+          shared_api.ApiService.onSessionExpired = null; // mute during validation
           final response = await _authService.validateToken(token);
+          shared_api.ApiService.onSessionExpired = savedCallback; // restore
+
           if (response['success'] == true) {
             // /get-owner returns user data in response['data']
             final rawData = response['data'];
@@ -380,14 +396,15 @@ class AuthProvider extends ChangeNotifier {
               await _saveUserSession(token, rawData);
               notifyListeners();
             }
-          } else {
-            // Token is invalid, clear session
+          } else if (response['sessionExpired'] == true) {
+            // Token genuinely expired — clear session, caller will redirect
             await _clearUserSession();
             _user = null;
             _isAuthenticated = false;
             _isHotelApproved = false;
             notifyListeners();
           }
+          // Any other non-success (network error, server down) → keep cached data
         } catch (_) {
           // Network error — keep using cached user data, don't log out
         }
@@ -540,6 +557,9 @@ class AuthProvider extends ChangeNotifier {
       await prefs.remove(AppConstants.userKey);
       await prefs.remove(AppConstants.hotelKey);
       await prefs.remove(AppConstants.isHotelApprovedKey);
+      await prefs.remove('user_role');
+      await prefs.remove('hotelId');
+      await prefs.remove('hotel_id');
     } catch (e) {
       debugPrint('Error clearing user session: $e');
     }

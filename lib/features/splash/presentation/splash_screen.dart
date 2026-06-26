@@ -83,7 +83,11 @@ class _SplashScreenState extends State<SplashScreen>
         // Load user session first
         await authProvider.checkAuthStatus();
         
-        if (userRole == 'hotel_owner') {
+        // Role check: accept 'hotel_owner', 'owner', 'HOTEL_OWNER', etc.
+        final freshRole = prefs.getString('user_role') ?? userRole ?? '';
+        final isOwner = freshRole.toLowerCase().contains('owner');
+        
+        if (isOwner) {
           // Set owner mode
           await appModeProvider.setOwnerMode(true);
           

@@ -68,45 +68,69 @@ class RealRoomService {
   }
 
   /// Extracts a flat list of room maps from a hotel data object.
-  /// Handles both:
-  ///   - hotel.rooms (flat array)
-  ///   - hotel.room_types[].rooms (nested)
+  /// Handles: hotel.rooms[], hotel.room_types[].rooms[] and creates dummy rooms from room_types if needed
   static List<dynamic> _extractRooms(dynamic hotelData, String hotelId) {
+    print('🔍 [RealRoomService (Owner)] _extractRooms called with hotelData: $hotelData, type: ${hotelData.runtimeType}');
     if (hotelData == null) return [];
-    final List<dynamic> result = [];
+    final result = <dynamic>[];
 
-    // Flat rooms array
-    if (hotelData['rooms'] is List) {
+    // 1. Check for direct rooms list
+    if (hotelData is Map && hotelData['rooms'] is List) {
+      print('🔍 [RealRoomService (Owner)] Found direct rooms list: ${hotelData['rooms']}');
       result.addAll(hotelData['rooms'] as List);
     }
 
-    // Nested via room_types
-    if (hotelData['room_types'] is List) {
+    // 2. Check for room_types with rooms nested inside
+    if (hotelData is Map && hotelData['room_types'] is List) {
+      print('🔍 [RealRoomService (Owner)] Found room_types list: ${hotelData['room_types']}');
       for (final rt in hotelData['room_types'] as List) {
-        if (rt is Map && rt['rooms'] is List) {
+        if (rt is! Map) continue;
+        
+        // If room_type has rooms list, use that
+        if (rt['rooms'] is List && (rt['rooms'] as List).isNotEmpty) {
           for (final room in rt['rooms'] as List) {
-            if (room is Map) {
-              // Enrich room with room_type info if not already set
-              final enriched = Map<String, dynamic>.from(room as Map);
-              enriched['hotel_id'] ??= hotelId;
-              enriched['type'] ??= rt['name']?.toString() ?? '';
-              enriched['price_per_night'] ??= rt['price_per_night'] ?? rt['base_price'] ?? 0;
-              enriched['capacity'] ??= rt['capacity'] ?? 1;
-              result.add(enriched);
-            }
+            if (room is! Map) continue;
+            final enriched = Map<String, dynamic>.from(room);
+            enriched['hotel_id'] ??= hotelId;
+            enriched['type'] ??= rt['name']?.toString() ?? '';
+            enriched['price_per_night'] ??= rt['price_per_night'] ?? rt['base_price'] ?? 0;
+            enriched['capacity'] ??= rt['max_adults'] ?? 1;
+            result.add(enriched);
+          }
+        } else {
+          // No rooms in room_type, create dummy rooms using total_rooms from room_type
+          final totalRooms = rt['total_rooms'] ?? 1;
+          final roomTypeName = rt['name']?.toString() ?? 'Room';
+          print('🔍 [RealRoomService (Owner)] Creating $totalRooms dummy rooms for room type: $roomTypeName');
+          
+          for (int i = 0; i < totalRooms; i++) {
+            final dummyRoom = <String, dynamic>{
+              'id': 'dummy-${rt['id']}-$i',
+              'hotel_id': hotelId,
+              'room_number': '$roomTypeName ${i + 1}',
+              'type': roomTypeName,
+              'status': 'available',
+              'price_per_night': rt['base_price'] ?? rt['effective_price'] ?? 0,
+              'capacity': rt['max_adults'] ?? 1,
+              'description': rt['description'] ?? '',
+              'amenities': rt['amenities'] ?? [],
+              'images': rt['images'] ?? [],
+            };
+            result.add(dummyRoom);
           }
         }
       }
     }
-
+    print('🔍 [RealRoomService (Owner)] Extracted ${result.length} rooms');
     return result;
   }
 
   // GET /filters/search — rooms by capacity
-  Future<List<Map<String, dynamic>>> getRoomsByCapacity(int capacity) async {
+  static Future<List<Map<String, dynamic>>> getRoomsByCapacity(int capacity, {String? token}) async {
     try {
       final response = await ApiService.get(
         '/filters/search',
+        token: token,
         queryParams: {'capacity': capacity.toString()},
       );
       if (response['success'] == true) {
@@ -118,21 +142,47 @@ class RealRoomService {
     }
   }
 
+  // GET /room-types — get all room types for a hotel
+  static Future<Map<String, dynamic>> getRoomTypes({String? hotelId, String? token}) async {
+    try {
+      // First try to get hotel details which has room_types
+      if (hotelId != null) {
+        final response = await ApiService.get('/hotel-details/$hotelId', token: token);
+        if (response['success'] == true) {
+          return {'success': true, 'data': response['data']['room_types'] ?? []};
+        }
+      }
+      // Fallback to /my-hotels
+      final fallback = await ApiService.get('/my-hotels', token: token);
+      if (fallback['success'] == true) {
+        final data = fallback['data'];
+        dynamic hotel;
+        if (data is List && data.isNotEmpty) {
+          hotel = data.first;
+        } else if (data is Map) {
+          hotel = data;
+        }
+        if (hotel != null && hotel['room_types'] is List) {
+          return {'success': true, 'data': hotel['room_types']};
+        }
+      }
+      return {'success': true, 'data': []};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to load room types: ${e.toString()}'};
+    }
+  }
+
   // POST /store-room — create room with correct snake_case fields
-  Future<Map<String, dynamic>> createRoom(Map<String, dynamic> roomData) async {
+  static Future<Map<String, dynamic>> createRoom(Map<String, dynamic> roomData, {String? token}) async {
     try {
       final response = await ApiService.post(
         '/store-room',
+        token: token,
         data: {
-          'hotel_id': roomData['hotel_id'] ?? roomData['hotelId'],
-          'room_number': roomData['room_number'] ?? roomData['roomNumber'],
-          'type': roomData['type'] ?? 'STANDARD',
-          'price_per_night': roomData['price_per_night'] ?? roomData['pricePerNight'] ?? 0,
-          'capacity': roomData['capacity'] ?? 1,
+          'room_type_id': roomData['room_type_id'],
+          'room_number': roomData['room_number'],
+          'floor': roomData['floor'],
           'status': roomData['status'] ?? 'available',
-          if ((roomData['description'] ?? '').toString().isNotEmpty)
-            'description': roomData['description'],
-          if (roomData['amenities'] != null) 'amenities': roomData['amenities'],
         },
       );
       if (response['success'] == true) {
@@ -145,10 +195,11 @@ class RealRoomService {
   }
 
   // POST /update-room/{id} — update room
-  Future<Map<String, dynamic>> updateRoom(String roomId, Map<String, dynamic> roomData) async {
+  static Future<Map<String, dynamic>> updateRoom(String roomId, Map<String, dynamic> roomData, {String? token}) async {
     try {
       final response = await ApiService.post(
         '/update-room/$roomId',
+        token: token,
         data: roomData,
       );
       if (response['success'] == true) {
@@ -161,9 +212,9 @@ class RealRoomService {
   }
 
   // DELETE /delete-room/{id} — delete room
-  Future<void> deleteRoom(String roomId) async {
+  static Future<void> deleteRoom(String roomId, {String? token}) async {
     try {
-      final response = await ApiService.delete('/delete-room/$roomId');
+      final response = await ApiService.delete('/delete-room/$roomId', token: token);
       if (response['success'] != true) {
         throw Exception(response['message'] ?? 'Failed to delete room');
       }

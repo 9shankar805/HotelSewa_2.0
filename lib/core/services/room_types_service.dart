@@ -4,6 +4,60 @@ import 'shared/api_service.dart';
 import '../constants/api_config.dart';
 
 class RoomTypesService {
+  // POST /store-room-type — Create a room type
+  Future<Map<String, dynamic>> createRoomType({
+    required String hotelId,
+    required String name,
+    required double price,
+    required int capacity,
+    required int totalRooms,
+    String? description,
+    String? size,
+    List<int>? amenities,
+    File? coverPhoto,
+    String? token,
+  }) async {
+    try {
+      final data = <String, dynamic>{
+        'hotel_id': hotelId,
+        'name': name,
+        'price': price,
+        'capacity': capacity,
+        'total_rooms': totalRooms,
+        if (description != null) 'description': description,
+        if (size != null) 'size': size,
+        if (amenities != null) 'amenities': amenities,
+      };
+      
+      // If coverPhoto is provided, use uploadFiles
+      if (coverPhoto != null) {
+        final fields = data.map((k, v) => MapEntry(k, v.toString()));
+        final response = await ApiService.uploadFile(
+          ApiConfig.storeRoomTypeEndpoint,
+          coverPhoto,
+          token: token,
+          fields: fields,
+          fieldName: 'image',
+        );
+        return response['success'] == true
+            ? {'success': true, 'room_type': response['data']}
+            : {'success': false, 'message': response['message'] ?? 'Failed to create room type'};
+      }
+      
+      // No cover photo, use regular post
+      final response = await ApiService.post(
+        ApiConfig.storeRoomTypeEndpoint,
+        token: token,
+        data: data,
+      );
+      return response['success'] == true
+          ? {'success': true, 'room_type': response['data']}
+          : {'success': false, 'message': response['message'] ?? 'Failed to create room type'};
+    } catch (e) {
+      return {'success': false, 'message': 'Failed to create room type: $e'};
+    }
+  }
+
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('authToken');

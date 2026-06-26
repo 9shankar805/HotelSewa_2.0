@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api_config.dart';
 // Re-export the shared session-expiry handler
-import '../../../../shared/api_service.dart' as _shared;
+import '../../../shared/api_service.dart' as shared_svc;
 
 /// Owner-feature ApiService.
 /// Delegates all HTTP calls through the shared ApiService so that
@@ -32,7 +32,7 @@ class ApiService {
   }) async {
     // Convert Map<String, String> to Map<String, dynamic> for shared service
     final params = queryParams?.map((k, v) => MapEntry(k, v as dynamic));
-    return _shared.ApiService.get(endpoint, token: token, queryParams: params);
+    return shared_svc.ApiService.get(endpoint, token: token, queryParams: params);
   }
 
   static Future<Map<String, dynamic>> post(
@@ -42,7 +42,7 @@ class ApiService {
     Map<String, String>? queryParams,
   }) async {
     final params = queryParams?.map((k, v) => MapEntry(k, v as dynamic));
-    return _shared.ApiService.post(endpoint, token: token, data: data, queryParams: params);
+    return shared_svc.ApiService.post(endpoint, token: token, data: data, queryParams: params);
   }
 
   static Future<Map<String, dynamic>> put(
@@ -50,7 +50,7 @@ class ApiService {
     Map<String, dynamic>? data,
     String? token,
   }) async {
-    return _shared.ApiService.put(endpoint, token: token, data: data);
+    return shared_svc.ApiService.put(endpoint, token: token, data: data);
   }
 
   static Future<Map<String, dynamic>> patch(
@@ -58,7 +58,7 @@ class ApiService {
     Map<String, dynamic>? data,
     String? token,
   }) async {
-    return _shared.ApiService.patch(endpoint, token: token, data: data);
+    return shared_svc.ApiService.patch(endpoint, token: token, data: data);
   }
 
   static Future<Map<String, dynamic>> delete(
@@ -66,7 +66,7 @@ class ApiService {
     String? token,
     Map<String, dynamic>? data,
   }) async {
-    return _shared.ApiService.delete(endpoint, token: token, data: data);
+    return shared_svc.ApiService.delete(endpoint, token: token, data: data);
   }
 
   static Future<Map<String, dynamic>> uploadFile(
@@ -75,7 +75,7 @@ class ApiService {
     String? token,
     Map<String, String>? fields,
   }) async {
-    return _shared.ApiService.uploadFile(endpoint, file, token: token, fields: fields);
+    return shared_svc.ApiService.uploadFile(endpoint, file, token: token, fields: fields);
   }
 
   static Future<Map<String, dynamic>> uploadFiles(
@@ -84,6 +84,6 @@ class ApiService {
     String? token,
     Map<String, String>? fields,
   }) async {
-    return _shared.ApiService.uploadFiles(endpoint, files, token: token, fields: fields);
+    return shared_svc.ApiService.uploadFiles(endpoint, files, token: token, fields: fields);
   }
 }
