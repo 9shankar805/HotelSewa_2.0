@@ -118,7 +118,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           IconButton(
             icon: const Icon(Icons.confirmation_number_outlined, color: AppColors.primary),
             tooltip: 'My Support Tickets',
-            onPressed: () => Navigator.pushNamed(context, '/support-ticket'),
+            onPressed: () => context.push('/support-ticket'),
           ),
         ],
       ),
@@ -282,7 +282,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                     color: AppColors.warning,
                     title: 'Submit a Ticket',
                     subtitle: 'Track your support request',
-                    onTap: () => Navigator.pushNamed(context, '/support-ticket'),
+                    onTap: () => context.push('/support-ticket'),
                     isLast: true,
                   ),
                 ],

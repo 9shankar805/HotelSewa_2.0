@@ -10,6 +10,7 @@ import '../../../core/models/user_role.dart';
 import '../../../core/services/shared/auth_service.dart';
 import 'providers/auth_provider.dart';
 import 'otp_verification_screen.dart';
+import '../../../core/utils/referral_prompt.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -98,6 +99,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_role', UserRoleHelper.roleToString(_selectedRole));
       if (!mounted) return;
+      // Show referral prompt for new users before going home
+      await ReferralPrompt.showIfNeeded(context, token: auth.token ?? '');
+      if (!mounted) return;
       context.go(_selectedRole == UserRole.hotelOwner ? '/owner/dashboard' : '/home');
     } catch (e) {
       if (mounted) setState(() => _loading = false);
@@ -113,6 +117,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       await auth.signInWithApple();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_role', UserRoleHelper.roleToString(_selectedRole));
+      if (!mounted) return;
+      // Show referral prompt for new users before going home
+      await ReferralPrompt.showIfNeeded(context, token: auth.token ?? '');
       if (!mounted) return;
       context.go(_selectedRole == UserRole.hotelOwner ? '/owner/dashboard' : '/home');
     } catch (e) {

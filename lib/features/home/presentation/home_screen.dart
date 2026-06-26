@@ -377,7 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _chips() {
     final items = [
       (Icons.near_me_rounded, 'Near Me', '/near-me'),
-      (Icons.history_rounded,  'Recent',  '/search'),
+      (Icons.history_rounded,  'Recent',  '/recently-viewed'),
       (Icons.map_rounded,      'Map',     '/map-search'),
     ];
     return Padding(

@@ -112,4 +112,26 @@ class HotelService {
       return {'success': false, 'message': 'Failed to load blackout dates'};
     }
   }
+
+  Future<Map<String, dynamic>> recordHotelView(String hotelId) async {
+    try {
+      final response = await ApiService.post(
+        ApiConfig.buildPath(ApiConfig.recordHotelViewEndpoint, '$hotelId/view'),
+      );
+      return {'success': true, 'data': response['data']};
+    } catch (e) {
+      debugPrint('[HotelService] Error recording hotel view: $e');
+      return {'success': false, 'message': 'Failed to record view'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getRecentlyViewedHotels() async {
+    try {
+      final response = await ApiService.get(ApiConfig.recentlyViewedHotelsEndpoint);
+      return {'success': true, 'data': response['data']};
+    } catch (e) {
+      debugPrint('[HotelService] Error getting recently viewed: $e');
+      return {'success': false, 'message': 'Failed to load recently viewed'};
+    }
+  }
 }
