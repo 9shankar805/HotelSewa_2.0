@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/apple_auth_service.dart';
 import '../../../dashboard/presentation/services/dashboard_service.dart';
 import '../../../bookings/presentation/services/booking_service.dart';
 import '../../../rooms/presentation/services/room_service.dart';
@@ -118,12 +119,27 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
-      // Web client ID (type 3) from google-services.json — needed to get idToken
-      final GoogleSignInAccount? googleUser = await GoogleSignIn(
-        serverClientId:
-            '664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com',
-        scopes: ['email', 'profile'],
-      ).signIn();
+      // On iOS, clientId must be the iOS OAuth client ID from GoogleService-Info.plist.
+      // On Android/Web, we pass serverClientId (web client type 3) to get an idToken.
+      final bool isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+
+      final googleSignIn = isIOS
+          ? GoogleSignIn(
+              // iOS client ID from GoogleService-Info.plist CLIENT_ID
+              clientId:
+                  '664870792174-jvd5i82d0hi2ba1b3j1ifvs61s6s8pqi.apps.googleusercontent.com',
+              serverClientId:
+                  '664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com',
+              scopes: ['email', 'profile'],
+            )
+          : GoogleSignIn(
+              // Web client ID (type 3) — needed on Android to get idToken
+              serverClientId:
+                  '664870792174-akgpqfbgcddbfn936e531lnjo52fqc61.apps.googleusercontent.com',
+              scopes: ['email', 'profile'],
+            );
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
         _setError('Google Sign-In was cancelled');
@@ -154,6 +170,42 @@ class AuthProvider extends ChangeNotifier {
       final msg = e.toString().replaceFirst('Exception: ', '');
       if (!msg.contains('cancelled')) {
         _setError('Google Sign-In failed: $msg');
+      }
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> signInWithApple() async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await AppleAuthService.signInWithApple();
+
+      if (response['success'] == true) {
+        final token = response['data']?['token'] ?? response['token'];
+        final rawData = response['data'] is Map
+            ? Map<String, dynamic>.from(response['data'])
+            : <String, dynamic>{};
+        final userData = rawData.containsKey('user')
+            ? rawData['user'] as Map<String, dynamic>
+            : rawData;
+        _user = User.fromJson(userData);
+        _token = token?.toString();
+        _isAuthenticated = true;
+        await _saveUserSession(_token ?? '', userData);
+        _setTokenForServices(_token ?? '');
+      } else {
+        final msg = response['message'] ?? 'Apple Sign-In failed';
+        _setError(msg);
+        throw Exception(msg);
+      }
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      if (!msg.contains('cancelled')) {
+        _setError('Apple Sign-In failed: $msg');
       }
       rethrow;
     } finally {
