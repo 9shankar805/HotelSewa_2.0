@@ -20,11 +20,12 @@ class _AddRoomScreenState extends State<AddRoomScreen> {
   final _priceCtrl = TextEditingController();
   final _capacityCtrl = TextEditingController(text: '2');
   final _sizeCtrl = TextEditingController();
+  final _totalRoomsCtrl = TextEditingController(text: '1');
   bool _submitting = false;
 
   @override
   void dispose() {
-    for (final c in [_nameCtrl, _descCtrl, _priceCtrl, _capacityCtrl, _sizeCtrl])
+    for (final c in [_nameCtrl, _descCtrl, _priceCtrl, _capacityCtrl, _sizeCtrl, _totalRoomsCtrl])
       c.dispose();
     super.dispose();
   }
@@ -106,18 +107,21 @@ class _AddRoomScreenState extends State<AddRoomScreen> {
         return;
       }
 
-      // Use snake_case field names to match API expectations
+      // POST /store-room-type — correct field names per API docs
       final resp = await ApiService.post(
         ApiConfig.storeRoomTypeEndpoint,
         token: token,
         data: {
-          'hotel_id': hotelId,
+          'hotel_id': int.tryParse(hotelId) ?? hotelId,
           'name': _nameCtrl.text.trim(),
-          'description': _descCtrl.text.trim(),
-          'price_per_night': double.tryParse(_priceCtrl.text) ?? 0,
+          'description': _descCtrl.text.trim().isNotEmpty
+              ? _descCtrl.text.trim()
+              : null,
+          'price': double.tryParse(_priceCtrl.text) ?? 0,   // API expects 'price' not 'price_per_night'
           'capacity': int.tryParse(_capacityCtrl.text) ?? 2,
-          'room_size': _sizeCtrl.text.trim(),
-        },
+          'total_rooms': int.tryParse(_totalRoomsCtrl.text) ?? 1,  // required by API
+          if (_sizeCtrl.text.trim().isNotEmpty) 'room_size': _sizeCtrl.text.trim(),
+        }..removeWhere((_, v) => v == null),
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -209,7 +213,14 @@ class _AddRoomScreenState extends State<AddRoomScreen> {
                         validator: (v) => v!.isEmpty ? 'Required' : null,
                       ),
                       _field(
-                        'Max Capacity (guests)',
+                        'Total Rooms of this Type *',
+                        _totalRoomsCtrl,
+                        Icons.meeting_room_rounded,
+                        type: TextInputType.number,
+                        validator: (v) => v!.isEmpty ? 'Required' : null,
+                      ),
+                      _field(
+                        'Max Capacity (guests per room)',
                         _capacityCtrl,
                         Icons.people_rounded,
                         type: TextInputType.number,

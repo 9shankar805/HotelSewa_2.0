@@ -3,8 +3,6 @@ import '../models/room_model.dart';
 import '../services/real_room_service.dart';
 
 class RoomProvider extends ChangeNotifier {
-  final RealRoomService _roomService = RealRoomService();
-  
   List<Room> _rooms = [];
   List<Room> _filteredRooms = [];
   bool _isLoading = false;
@@ -97,12 +95,12 @@ class RoomProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> filterByCapacity(int capacity) async {
+  Future<void> filterByCapacity(int capacity, {String? token}) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final roomsData = await _roomService.getRoomsByCapacity(capacity);
+      final roomsData = await RealRoomService.getRoomsByCapacity(capacity, token: token);
       _rooms = roomsData.map((json) => Room.fromJson(json)).toList();
       _filteredRooms = List.from(_rooms);
     } catch (e) {
@@ -139,7 +137,7 @@ class RoomProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> createRoom(Room room) async {
+  Future<void> createRoom(Room room, {String? token}) async {
     _setLoading(true);
     _clearError();
 
@@ -152,7 +150,7 @@ class RoomProvider extends ChangeNotifier {
         return;
       }
 
-      final roomData = await _roomService.createRoom(room.toJson());
+      final roomData = await RealRoomService.createRoom(room.toJson(), token: token);
       final newRoom = Room.fromJson(roomData);
       
       _rooms.insert(0, newRoom);
@@ -166,12 +164,12 @@ class RoomProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateRoom(Room room) async {
+  Future<void> updateRoom(Room room, {String? token}) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final roomData = await _roomService.updateRoom(room.id, room.toJson());
+      final roomData = await RealRoomService.updateRoom(room.id, room.toJson(), token: token);
       final updatedRoom = Room.fromJson(roomData);
       
       final roomIndex = _rooms.indexWhere((r) => r.id == room.id);
@@ -192,11 +190,11 @@ class RoomProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteRoom(String roomId) async {
+  Future<void> deleteRoom(String roomId, {String? token}) async {
     _clearError();
 
     try {
-      await _roomService.deleteRoom(roomId);
+      await RealRoomService.deleteRoom(roomId, token: token);
       
       _rooms.removeWhere((r) => r.id == roomId);
       _filteredRooms.removeWhere((r) => r.id == roomId);
