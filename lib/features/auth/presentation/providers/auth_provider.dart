@@ -518,6 +518,14 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(AppConstants.authTokenKey, token);
       await prefs.setString(AppConstants.userKey, jsonEncode(userData));
+      // Persist user_role so splash screen can restore the correct mode
+      final role = userData['role']?.toString() ??
+          userData['user_role']?.toString() ??
+          userData['type']?.toString() ??
+          '';
+      if (role.isNotEmpty) {
+        await prefs.setString('user_role', role);
+      }
     } catch (e) {
       debugPrint('Error saving user session: $e');
     }

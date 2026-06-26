@@ -29,8 +29,28 @@ class RoomProvider extends ChangeNotifier {
         );
 
         if (response['success'] == true) {
-          final roomsData = List<Map<String, dynamic>>.from(response['data']);
-          _rooms = roomsData.map((json) => Room.fromJson(json)).toList();
+          final raw = response['data'];
+
+          List<dynamic> rawList;
+          if (raw is List) {
+            rawList = raw;
+          } else if (raw is Map) {
+            final nested = raw['rooms'] ?? raw['data'] ?? raw['room_types'];
+            if (nested is List) {
+              rawList = nested;
+            } else if (raw['id'] != null) {
+              rawList = [raw];
+            } else {
+              rawList = [];
+            }
+          } else {
+            rawList = [];
+          }
+
+          _rooms = rawList
+              .whereType<Map>()
+              .map((json) => Room.fromJson(Map<String, dynamic>.from(json)))
+              .toList();
           _applyFilters();
         } else {
           _rooms = [];

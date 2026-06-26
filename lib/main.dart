@@ -78,9 +78,15 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     // Wire session-expiry handler: clears token and redirects to login
+    // Guard: don't redirect if already on /login, /splash, or /onboarding
     ApiService.onSessionExpired = () {
+      final location = appRouter.routerDelegate.currentConfiguration.uri.path;
+      if (location == '/login' || location == '/splash' || location == '/onboarding') {
+        debugPrint('[SessionExpiry] Already on $location — skipping redirect');
+        return;
+      }
+      debugPrint('[SessionExpiry] Redirecting to /login from $location');
       ApiService.clearToken();
-      // Navigate to login via go_router (Navigator 2.0) clearing the entire stack
       try {
         appRouter.go('/login');
       } catch (e) {

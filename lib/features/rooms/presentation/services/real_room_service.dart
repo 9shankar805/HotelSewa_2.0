@@ -2,7 +2,8 @@ import 'dart:io';
 import '../../../../core/services/shared/api_service.dart';
 
 class RealRoomService {
-  // GET /hotels/{hotelId}/menu — rooms are part of hotel menu/details
+  /// GET /hotel-details/{hotelId} — returns full hotel with room_types and rooms.
+  /// Falls back to GET /my-hotels if hotel-details fails.
   static Future<Map<String, dynamic>> getRooms({
     required String hotelId,
     String? status,
@@ -12,22 +13,89 @@ class RealRoomService {
     String? token,
   }) async {
     try {
-      final queryParams = <String, String>{
-        'page': page.toString(),
-        'limit': limit.toString(),
-      };
-      if (status != null) queryParams['status'] = status;
-      if (type != null) queryParams['type'] = type;
-
+      // Primary: hotel-details gives room_types[] each with rooms[]
       final response = await ApiService.get(
-        '/hotels/$hotelId/menu',
+        '/hotel-details/$hotelId',
         token: token,
-        queryParams: queryParams,
       );
-      return response;
+
+      if (response['success'] == true || response['data'] != null) {
+        final rooms = _extractRooms(response['data'], hotelId);
+        final filtered = _applyFilters(rooms, status: status, type: type);
+        return {'success': true, 'data': filtered};
+      }
+
+      // Fallback: /my-hotels
+      final fallback = await ApiService.get('/my-hotels', token: token);
+      if (fallback['success'] == true) {
+        final data = fallback['data'];
+        List<dynamic> allRooms = [];
+        if (data is List) {
+          for (final hotel in data) {
+            if (hotel['id']?.toString() == hotelId || data.length == 1) {
+              allRooms = _extractRooms(hotel, hotelId);
+              break;
+            }
+          }
+        } else if (data is Map) {
+          allRooms = _extractRooms(data, hotelId);
+        }
+        return {'success': true, 'data': _applyFilters(allRooms, status: status, type: type)};
+      }
+
+      return {'success': true, 'data': <dynamic>[]};
     } catch (e) {
       return {'success': false, 'message': 'Failed to load rooms: ${e.toString()}'};
     }
+  }
+
+  /// Extracts a flat list of rooms from a hotel data object.
+  /// Handles: hotel.rooms[], hotel.room_types[].rooms[]
+  static List<dynamic> _extractRooms(dynamic hotelData, String hotelId) {
+    if (hotelData == null) return [];
+    final result = <dynamic>[];
+
+    if (hotelData['rooms'] is List) {
+      result.addAll(hotelData['rooms'] as List);
+    }
+
+    if (hotelData['room_types'] is List) {
+      for (final rt in hotelData['room_types'] as List) {
+        if (rt is! Map) continue;
+        if (rt['rooms'] is List) {
+          for (final room in rt['rooms'] as List) {
+            if (room is! Map) continue;
+            final enriched = Map<String, dynamic>.from(room);
+            enriched['hotel_id'] ??= hotelId;
+            enriched['type'] ??= rt['name']?.toString() ?? '';
+            enriched['price_per_night'] ??= rt['price_per_night'] ?? rt['base_price'] ?? 0;
+            enriched['capacity'] ??= rt['capacity'] ?? 1;
+            result.add(enriched);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  static List<dynamic> _applyFilters(
+    List<dynamic> rooms, {
+    String? status,
+    String? type,
+  }) {
+    return rooms.where((r) {
+      if (r is! Map) return false;
+      if (status != null) {
+        final s = (r['status'] ?? '').toString().toLowerCase();
+        if (s != status.toLowerCase()) return false;
+      }
+      if (type != null) {
+        final t = (r['type'] ?? r['room_type'] ?? '').toString().toLowerCase();
+        if (t != type.toLowerCase()) return false;
+      }
+      return true;
+    }).toList();
   }
 
   // GET /filters/search — rooms by capacity
@@ -46,26 +114,21 @@ class RealRoomService {
     }
   }
 
-  // POST /store-room — create room
+  // POST /store-room — create room with snake_case fields
   Future<Map<String, dynamic>> createRoom(Map<String, dynamic> roomData) async {
     try {
       final response = await ApiService.post(
         '/store-room',
         data: {
-          'roomNumber': roomData['roomNumber'],
-          'type': (roomData['type'] ?? 'STANDARD').toString().toUpperCase(),
-          'pricePerNight': roomData['pricePerNight'],
-          'capacity': roomData['capacity'],
-          'hotelId': roomData['hotelId'],
-          'amenities': roomData['amenities'] ?? [],
-          'description': roomData['description'],
-          'floor': roomData['floor'],
-          'size': roomData['size'],
-          'hasAc': roomData['hasAc'] ?? false,
-          'hasWifi': roomData['hasWifi'] ?? false,
-          'hasTv': roomData['hasTv'] ?? false,
-          'hasMiniBar': roomData['hasMiniBar'] ?? false,
+          'hotel_id': roomData['hotel_id'] ?? roomData['hotelId'],
+          'room_number': roomData['room_number'] ?? roomData['roomNumber'],
+          'type': roomData['type'] ?? 'STANDARD',
+          'price_per_night': roomData['price_per_night'] ?? roomData['pricePerNight'] ?? 0,
+          'capacity': roomData['capacity'] ?? 1,
           'status': roomData['status'] ?? 'available',
+          if ((roomData['description'] ?? '').toString().isNotEmpty)
+            'description': roomData['description'],
+          if (roomData['amenities'] != null) 'amenities': roomData['amenities'],
         },
       );
       if (response['success'] == true) {

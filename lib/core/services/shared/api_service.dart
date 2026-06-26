@@ -169,10 +169,30 @@ class ApiService {
   }
 
   static Map<String, dynamic> _handleResponse(http.Response response) {
-    // Detect session expiry (401 Unauthorized or 302 redirect to login)
-    if (response.statusCode == 401 || response.statusCode == 302) {
-      debugPrint('[API] Session expired (${response.statusCode}) — triggering re-auth');
-      // Fire the callback on the next frame so it doesn't block the current call
+    // Detect session expiry (401 Unauthorized)
+    // IMPORTANT: Only trigger re-auth if we actually had a token in the request.
+    // A 401 on a request made WITHOUT a token is a coding error, not session expiry.
+    // We guard this with a cooldown so rapid parallel 401s don't fire the callback multiple times.
+    if (response.statusCode == 401) {
+      debugPrint('[API] 401 Unauthorized → ${response.request?.url}');
+      final now = DateTime.now().millisecondsSinceEpoch;
+      // Debounce: only fire once per 3 seconds to avoid redirect loops
+      if (now - _lastSessionExpiredMs > 3000) {
+        _lastSessionExpiredMs = now;
+        debugPrint('[API] Session expired — triggering re-auth');
+        Future.microtask(() => onSessionExpired?.call());
+      }
+      return {
+        'success': false,
+        'message': 'Session expired. Please login again.',
+        'statusCode': response.statusCode,
+        'sessionExpired': true,
+      };
+    }
+
+    // 302 redirect to login page — treat as session expiry but don't debounce
+    if (response.statusCode == 302) {
+      debugPrint('[API] 302 redirect — treating as session expiry');
       Future.microtask(() => onSessionExpired?.call());
       return {
         'success': false,
@@ -205,6 +225,9 @@ class ApiService {
       };
     }
   }
+
+  // Debounce timestamp for session-expiry callback
+  static int _lastSessionExpiredMs = 0;
 }
 
 

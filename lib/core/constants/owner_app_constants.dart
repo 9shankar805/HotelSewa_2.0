@@ -42,7 +42,7 @@ class AppConstants {
   static const String loginScreen = '/login';
   static const String otpScreen = '/otp';
   static const String onboardingScreen = '/onboarding';
-  static const String dashboardScreen = '/dashboard';
+  static const String dashboardScreen = '/owner/dashboard';
   static const String bookingsScreen = '/bookings';
   static const String roomsScreen = '/rooms';
   static const String earningsScreen = '/earnings';
