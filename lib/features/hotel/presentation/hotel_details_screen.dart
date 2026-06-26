@@ -71,6 +71,9 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
     debugPrint('?? HotelDetailsScreen: Full arguments: ${widget.arguments}');
 
     if (hotelId != null) {
+      // Record the view
+      await _hotelService.recordHotelView(hotelId);
+      
       try {
         debugPrint('?? HotelDetailsScreen: Calling getHotelDetails...');
         final hotelResult = await _hotelService.getHotelDetails(hotelId);

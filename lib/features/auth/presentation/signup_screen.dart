@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/constants/api_config.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/shared/api_service.dart';
 import '../../../core/services/shared/auth_service.dart';
 import '../../../core/navigation/main_navigation.dart';
 
@@ -18,9 +20,11 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _referralController = TextEditingController();
   bool _loading = false;
   bool _showPassword = false;
   bool _showConfirmPassword = false;
+  bool _showReferralField = false;
 
   @override
   void initState() {
@@ -39,6 +43,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _referralController.dispose();
     super.dispose();
   }
 
@@ -80,17 +85,35 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (result['success']) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('authToken', result['data']['token'] ?? '');
+      final token = result['data']['token'] ?? '';
+      await prefs.setString('authToken', token);
       await prefs.setString('userEmail', _emailController.text);
       await prefs.setString('userName', _nameController.text);
+
+      // Apply referral code if entered
+      final referralCode = _referralController.text.trim().toUpperCase();
+      if (referralCode.isNotEmpty && token.isNotEmpty) {
+        try {
+          await ApiService.post(
+            ApiConfig.loyaltyApplyReferralEndpoint,
+            token: token,
+            data: {'referral_code': referralCode},
+          );
+        } catch (_) {
+          // Non-fatal — continue even if referral apply fails
+        }
+      }
 
       if (!mounted) return;
 
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Welcome to HOTELSEWA! 🎉'),
-          content: const Text('Your account has been created successfully.'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Welcome to HotelSewa! 🎉'),
+          content: Text(referralCode.isNotEmpty
+              ? 'Account created! Your referral code "$referralCode" has been applied. Enjoy your Rs.500 reward!'
+              : 'Your account has been created successfully.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -346,6 +369,88 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
 
                           const SizedBox(height: 10),
+
+                          // Optional referral code
+                          GestureDetector(
+                            onTap: () => setState(() => _showReferralField = !_showReferralField),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _showReferralField
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.keyboard_arrow_down_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _showReferralField
+                                      ? 'Remove referral code'
+                                      : 'Have a referral code? (Optional)',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          if (_showReferralField) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF5F5),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.card_giftcard_rounded,
+                                      color: AppColors.primary, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _referralController,
+                                      textCapitalization: TextCapitalization.characters,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 2,
+                                        color: AppColors.primary,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        hintText: 'Enter referral code',
+                                        hintStyle: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          letterSpacing: 0,
+                                          color: Color(0xFFADB5BD),
+                                        ),
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                                      ),
+                                    ),
+                                  ),
+                                  if (_referralController.text.isNotEmpty)
+                                    const Icon(Icons.check_circle_rounded,
+                                        color: AppColors.primary, size: 18),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Padding(
+                              padding: EdgeInsets.only(left: 4),
+                              child: Text(
+                                'You\'ll get Rs.500 off your first booking!',
+                                style: TextStyle(fontSize: 12, color: AppColors.primary),
+                              ),
+                            ),
+                          ],
+
+                          const SizedBox(height: 16),
 
                           // Signup button
                           SizedBox(

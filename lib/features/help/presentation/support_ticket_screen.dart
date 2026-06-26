@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/support_service.dart';
+import 'ticket_detail_screen.dart';
 
 class SupportTicketScreen extends StatefulWidget {
   final String? bookingId;
@@ -312,35 +314,43 @@ class _MyTicketsTabState extends State<_MyTicketsTab> {
       itemBuilder: (_, i) {
         final t = _tickets[i];
         final status = t['status'] as String;
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: AppColors.cardShadow),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(t['id'] as String, style: const TextStyle(fontSize: 12, color: AppColors.gray, fontWeight: FontWeight.w600)),
-                  _statusBadge(status),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(t['subject'] as String, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.darkGray)),
-              const SizedBox(height: 4),
-              Text(t['category'] as String, style: const TextStyle(fontSize: 12, color: AppColors.gray)),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.access_time_rounded, size: 12, color: AppColors.placeholder),
-                  const SizedBox(width: 4),
-                  Text('Last reply: ${t['lastReply']}', style: const TextStyle(fontSize: 11, color: AppColors.placeholder)),
-                  const Spacer(),
-                  Text(t['date'] as String, style: const TextStyle(fontSize: 11, color: AppColors.placeholder)),
-                ],
-              ),
-            ],
+        return InkWell(
+          onTap: () {
+            context.push('/ticket-detail', extra: {'ticketId': t['id'] as String});
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: AppColors.cardShadow),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(t['id'] as String, style: const TextStyle(fontSize: 12, color: AppColors.gray, fontWeight: FontWeight.w600)),
+                    _statusBadge(status),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(t['subject'] as String, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.darkGray)),
+                const SizedBox(height: 4),
+                Text(t['category'] as String, style: const TextStyle(fontSize: 12, color: AppColors.gray)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.access_time_rounded, size: 12, color: AppColors.placeholder),
+                    const SizedBox(width: 4),
+                    Text('Last reply: ${t['lastReply']}', style: const TextStyle(fontSize: 11, color: AppColors.placeholder)),
+                    const Spacer(),
+                    Text(t['date'] as String, style: const TextStyle(fontSize: 11, color: AppColors.placeholder)),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.placeholder),
+                  ],
+                ),
+              ],
+            ),
           ),
         ).animate(delay: (i * 60).ms).fadeIn().slideY(begin: 0.05);
       },

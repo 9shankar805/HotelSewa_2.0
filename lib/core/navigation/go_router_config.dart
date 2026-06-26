@@ -39,6 +39,7 @@ import '../../features/payment_methods/presentation/emi_screen.dart';
 import '../../features/payment_methods/presentation/add_upi_screen.dart';
 import '../../features/help/presentation/help_center_screen.dart';
 import '../../features/help/presentation/support_ticket_screen.dart';
+import '../../features/help/presentation/ticket_detail_screen.dart';
 import '../../features/coupons/presentation/coupons_screen.dart';
 import '../../features/filters/presentation/filters_screen.dart';
 import '../../features/gallery/presentation/gallery_screen.dart';
@@ -212,6 +213,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/add-upi', builder: (_, __) => const AddUpiScreen()),
     GoRoute(path: '/help-center', builder: (_, __) => const HelpCenterScreen()),
     GoRoute(path: '/support-ticket', builder: (_, __) => const SupportTicketScreen()),
+    GoRoute(path: '/ticket-detail', builder: (_, s) => TicketDetailScreen(ticketId: (s.extra as Map<String, dynamic>?)?['ticketId'] ?? '')),
     GoRoute(path: '/coupons', builder: (_, __) => const CouponsScreen()),
     GoRoute(path: '/filters', builder: (_, __) => const FiltersScreen()),
     GoRoute(path: '/gallery', builder: (_, __) => const GalleryScreen()),

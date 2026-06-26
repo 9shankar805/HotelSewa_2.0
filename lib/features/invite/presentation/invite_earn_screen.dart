@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/api_config.dart';
 import '../../../core/constants/app_colors.dart';
@@ -61,11 +62,11 @@ class _InviteEarnScreenState extends State<InviteEarnScreen> {
   }
 
   void _share() {
-    final text = 'Use my referral code $_referralCode on HotelSewa and get Rs.500 off your first booking! Download: https://hotelsewa.com';
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share link copied!'), behavior: SnackBarBehavior.floating),
-    );
+    final text =
+        '🏨 Join HotelSewa and get Rs.500 off your first booking!\n\n'
+        'Use my referral code: *$_referralCode*\n\n'
+        'Download the app: https://hotelsewa.com';
+    Share.share(text, subject: 'Join HotelSewa & earn rewards!');
   }
 
   @override

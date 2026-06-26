@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/shared/api_service.dart';
 import '../../../core/services/shared/auth_service.dart';
+import '../../../core/utils/referral_prompt.dart';
 import '../../../core/navigation/main_navigation.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
@@ -70,7 +72,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('OTP Verified Successfully!')),
         );
-        // Navigate to home
+        // Show referral prompt for new users before navigating home
+        final token = result['data']?['token']?.toString() ?? '';
+        await ReferralPrompt.showIfNeeded(context, token: token);
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const MainNavigation()),
         );

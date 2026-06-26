@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/api_config.dart';
 import '../../../core/services/shared/api_service.dart';
+import '../../../core/services/hotel_service.dart';
 
 class RecentlyViewedScreen extends StatefulWidget {
   const RecentlyViewedScreen({Key? key}) : super(key: key);
@@ -13,6 +14,7 @@ class RecentlyViewedScreen extends StatefulWidget {
 }
 
 class _RecentlyViewedScreenState extends State<RecentlyViewedScreen> {
+  final HotelService _hotelService = HotelService();
   List _hotels = [];
   bool _loading = true;
 
@@ -25,13 +27,15 @@ class _RecentlyViewedScreenState extends State<RecentlyViewedScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken');
-      final response = await ApiService.get(ApiConfig.recentlyViewedHotelsEndpoint, token: token);
+      final response = await _hotelService.getRecentlyViewedHotels();
       if (mounted) {
-        final raw = response['data'];
-        final list = raw is List ? raw : (raw is Map ? (raw['data'] ?? raw['hotels'] ?? []) : []);
-        setState(() { _hotels = list; _loading = false; });
+        if (response['success']) {
+          final raw = response['data'];
+          final list = raw is List ? raw : (raw is Map ? (raw['data'] ?? raw['hotels'] ?? []) : []);
+          setState(() { _hotels = list; _loading = false; });
+        } else {
+          setState(() { _hotels = []; _loading = false; });
+        }
       }
     } catch (_) {
       if (mounted) setState(() { _hotels = []; _loading = false; });
