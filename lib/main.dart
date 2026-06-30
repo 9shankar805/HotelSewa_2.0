@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'dart:ui';
@@ -34,7 +35,9 @@ import 'features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'features/dashboard/presentation/services/dashboard_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // Preserve the native splash until we explicitly remove it
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   HttpOverrides.global = MyHttpOverrides();
   await dotenv.load(fileName: '.env');
 
@@ -48,6 +51,12 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase init error (non-fatal): $e');
   }
+
+  // Keep native splash visible for at least 3 seconds
+  await Future.delayed(const Duration(seconds: 3));
+
+  // Remove the native splash — Flutter UI takes over
+  FlutterNativeSplash.remove();
 
   // Global Flutter error handler — logs errors instead of crashing silently
   FlutterError.onError = (FlutterErrorDetails details) {

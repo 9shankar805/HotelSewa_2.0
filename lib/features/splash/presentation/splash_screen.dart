@@ -16,46 +16,25 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+  late AnimationController _ctrl;
+  late Animation<double> _fade;
 
   @override
   void initState() {
     super.initState();
-    
-    // Set status bar color
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: AppColors.primary,
-        statusBarIconBrightness: Brightness.light,
-      ),
-    );
 
-    // Initialize animations
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ));
+
+    _ctrl = AnimationController(
       vsync: this,
+      duration: const Duration(milliseconds: 800),
     );
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
+    _ctrl.forward();
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeIn,
-      ),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.elasticOut,
-      ),
-    );
-
-    // Start animations
-    _animationController.forward();
-
-    // Check authentication and navigate
     _checkAuthAndNavigate();
   }
 
@@ -69,32 +48,26 @@ class _SplashScreenState extends State<SplashScreen>
       final authToken = prefs.getString('authToken');
       final userRole = prefs.getString('user_role');
 
-      await Future.delayed(const Duration(seconds: 2));
+      // Wait at least 1.5 seconds on splash
+      await Future.delayed(const Duration(milliseconds: 1500));
 
       if (!mounted) return;
 
       if (!hasOnboarded) {
         context.go('/onboarding');
       } else if (authToken != null && authToken.isNotEmpty) {
-        // Get providers
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final appModeProvider = Provider.of<AppModeProvider>(context, listen: false);
-        
-        // Load user session first
+        final appModeProvider =
+            Provider.of<AppModeProvider>(context, listen: false);
+
         await authProvider.checkAuthStatus();
-        
-        // Role check: accept 'hotel_owner', 'owner', 'HOTEL_OWNER', etc.
+
         final freshRole = prefs.getString('user_role') ?? userRole ?? '';
         final isOwner = freshRole.toLowerCase().contains('owner');
-        
+
         if (isOwner) {
-          // Set owner mode
           await appModeProvider.setOwnerMode(true);
-          
-          // Refresh all service tokens
           authProvider.refreshAllServiceTokens();
-          
-          // Check hotel status and navigate appropriately
           try {
             final route = await authProvider.checkHotelStatusAndNavigate();
             if (mounted) {
@@ -114,7 +87,6 @@ class _SplashScreenState extends State<SplashScreen>
             if (mounted) context.go('/hotel-registration');
           }
         } else {
-          // Customer mode
           await appModeProvider.setOwnerMode(false);
           context.go('/home');
         }
@@ -131,115 +103,119 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: SafeArea(
+      backgroundColor: Colors.white,
+      body: FadeTransition(
+        opacity: _fade,
         child: Stack(
           children: [
-            // Logo and tagline in center
-            Center(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/logo.png',
-                        width: 120,
-                        height: 120,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Text(
-                            'HotelSewa',
-                            style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.white,
-                              letterSpacing: 8,
-                            ),
-                          );
-                        },
+            // Full-screen splash image
+            SizedBox.expand(
+              child: Image.asset(
+                'assets/splash.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: AppColors.primary,
+                  child: const Center(
+                    child: Text(
+                      'HotelSewa',
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 4,
                       ),
-                      const SizedBox(height: 16),
-                      // Stylish tagline with accent line
-                      Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 24, height: 1.5,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(1),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'N E P A L',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white.withOpacity(0.7),
-                                  letterSpacing: 5,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                                width: 24, height: 1.5,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.5),
-                                  borderRadius: BorderRadius.circular(1),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'No. 1 Hotel Booking Platform',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.white.withOpacity(0.95),
-                              letterSpacing: 0.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-            
-            // Version at bottom
-            Positioned(
-              bottom: 50,
-              left: 0,
-              right: 0,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Text(
-                  'Version 1.0.1',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.white.withOpacity(0.7),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+
+            // Animated dots overlay — covers the static dots baked into the image
+            // Dots in splash.png are at ~89% from top of image
+            Positioned.fill(
+              child: Align(
+                alignment: const Alignment(0, 0.78),
+                child: _AnimatedDots(),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+// ─── Animated loading dots ────────────────────────────────────────────────────
+class _AnimatedDots extends StatefulWidget {
+  @override
+  State<_AnimatedDots> createState() => _AnimatedDotsState();
+}
+
+class _AnimatedDotsState extends State<_AnimatedDots>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (i) {
+        // Each dot is offset by 1/3 of the cycle
+        final delay = i / 3;
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) {
+            // Shift animation value by delay, wrap around 0-1
+            final t = (_ctrl.value - delay) % 1.0;
+            // Pulse: scale 0.6 → 1.2 → 0.6 using a sine curve
+            final scale = 0.6 + 0.6 * _pulse(t);
+            // Active dot gets full white, inactive get semi-transparent white
+            final isActive = ((_ctrl.value * 3).floor() % 3) == i;
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 5),
+              width: 10 * scale,
+              height: 10 * scale,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isActive
+                    ? Colors.white
+                    : Colors.white.withOpacity(0.4),
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+
+  /// Returns 0→1→0 over the range t=0..1 (smooth pulse)
+  double _pulse(double t) {
+    // Use a simple triangle wave clamped to active window (first 50% of cycle)
+    if (t < 0.25) return t / 0.25;
+    if (t < 0.5) return 1.0 - (t - 0.25) / 0.25;
+    return 0.0;
   }
 }

@@ -43,6 +43,8 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
   List<Map<String, dynamic>> _rooms = [];
   List<Map<String, dynamic>> _amenities = [];
   List<Map<String, dynamic>> _reviews = [];
+  List<Map<String, dynamic>> _galleryCategories = [];
+  String _selectedGalleryCategory = 'All';
 
   // Controllers
   late TabController _tabController;
@@ -177,18 +179,153 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
           if (data['image'] is String && (data['image'] as String).isNotEmpty) {
             images.add(ImageUrlHelper.fix(data['image'] as String));
           }
-          final gallery = data['gallery'] as List? ?? [];
+          
+          // Parse gallery categories
+          final List<Map<String, dynamic>> galleryCategories = [];
+          // Try multiple possible keys for gallery data
+          final gallery = data['gallery'] as List? ?? 
+                         data['images'] as List? ?? 
+                         data['photos'] as List? ?? 
+                         [];
+          
+          // Add "All" category with all images
+          final List<String> allImages = [];
+          if (data['image'] is String && (data['image'] as String).isNotEmpty) {
+            allImages.add(ImageUrlHelper.fix(data['image'] as String));
+          }
+          
+          debugPrint('?? HotelDetailsScreen: Raw gallery data: $gallery');
+          
           for (final cat in gallery) {
-            final items = cat['items'] as List? ?? [];
-            for (final item in items) {
-              final url = ImageUrlHelper.fix(item['url']?.toString());
-              if (url.isNotEmpty && !images.contains(url)) images.add(url);
+            debugPrint('?? HotelDetailsScreen: Processing gallery item: $cat');
+            
+            // Try to get category name from multiple possible keys
+            String? catName;
+            if (cat is Map) {
+              catName = cat['name']?.toString() ?? 
+                        cat['title']?.toString() ?? 
+                        cat['category']?.toString() ?? 
+                        cat['label']?.toString();
+            }
+            
+            // Try to get items/images from multiple possible keys
+            List? items;
+            if (cat is Map) {
+              items = cat['items'] as List? ?? 
+                      cat['images'] as List? ?? 
+                      cat['photos'] as List?;
+            } else if (cat is String) {
+              // If it's just a string URL, treat it as a single image
+              items = [cat];
+              catName = 'Photo';
+            }
+            
+            final categoryImages = <String>[];
+            
+            if (items != null) {
+              for (final item in items) {
+                String? url;
+                if (item is String) {
+                  url = ImageUrlHelper.fix(item);
+                } else if (item is Map) {
+                  url = ImageUrlHelper.fix(
+                    item['url']?.toString() ?? 
+                    item['image']?.toString() ?? 
+                    item['src']?.toString(),
+                  );
+                }
+                
+                if (url != null && url.isNotEmpty && !categoryImages.contains(url)) {
+                  categoryImages.add(url);
+                }
+              }
+            }
+            
+            if (categoryImages.isNotEmpty) {
+              galleryCategories.add({
+                'name': catName ?? 'Category',
+                'images': categoryImages,
+              });
+              debugPrint('?? HotelDetailsScreen: Added category: ${catName ?? 'Category'} with ${categoryImages.length} images');
+              
+              // Add these images to allImages and main images list
+              for (final img in categoryImages) {
+                if (!allImages.contains(img)) allImages.add(img);
+                if (!images.contains(img)) images.add(img);
+              }
             }
           }
+          
+          // Add "All" category at the beginning
+          galleryCategories.insert(0, {
+            'name': 'All',
+            'images': allImages,
+          });
+          
+          // If no categories from API, or categories have bad names, add default ones
+          final hasProperCategories = galleryCategories.any((cat) {
+            final name = cat['name'] as String;
+            return name != 'Category' && name != 'All' && name != 'Photo';
+          });
+          
+          debugPrint('?? HotelDetailsScreen: hasProperCategories: $hasProperCategories');
+          debugPrint('?? HotelDetailsScreen: Gallery categories before fallback: ${galleryCategories.map((c) => c['name']).toList()}');
+          
+          if (!hasProperCategories || galleryCategories.length <= 1) {
+            final sampleCategories = [
+              'Facade',
+              'Reception', 
+              'Lobby',
+              'Room',
+              'Dining',
+              'Pool',
+              'Gym',
+              'Spa',
+              'Exterior',
+              'Interior',
+              'Other',
+            ];
+            
+            // Keep only "All" category and add sample categories
+            galleryCategories.removeWhere((cat) => 
+              cat['name'] == 'Category' || 
+              cat['name'] == 'Photo' || 
+              (cat['name'] != 'All' && !hasProperCategories));
+            
+            for (int i = 0; i < sampleCategories.length && i < images.length; i++) {
+              final imagesPerCategory = (images.length / sampleCategories.length).ceil();
+              final startIndex = i * imagesPerCategory;
+              final endIndex = startIndex + imagesPerCategory;
+              
+              final imagesForCategory = images.sublist(
+                startIndex,
+                endIndex > images.length ? images.length : endIndex,
+              );
+              
+              if (imagesForCategory.isNotEmpty) {
+                galleryCategories.add({
+                  'name': sampleCategories[i],
+                  'images': imagesForCategory,
+                });
+              }
+            }
+          }
+          
+          // Make sure "Other" is the last category if present, or add it
+          final otherIndex = galleryCategories.indexWhere((cat) => cat['name'] == 'Other');
+          if (otherIndex > 0) {
+            final otherCategory = galleryCategories.removeAt(otherIndex);
+            galleryCategories.add(otherCategory);
+          } else if (otherIndex == -1 && hasProperCategories && images.length > 0) {
+            // Optional: Add "Other" with any remaining images if needed
+          }
+          
+          debugPrint('?? HotelDetailsScreen: Final gallery categories: ${galleryCategories.map((c) => c['name']).toList()}');
 
           debugPrint('?? HotelDetailsScreen: Final hotel name: ${data['name']}');
           debugPrint('?? HotelDetailsScreen: Final rooms count: ${rooms.length}');
           debugPrint('?? HotelDetailsScreen: Final images count: ${images.length}');
+          debugPrint('?? HotelDetailsScreen: Gallery categories count: ${galleryCategories.length}');
 
           setState(() {
             _hotel = {
@@ -203,6 +340,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
             _rooms = rooms;
             _reviews = reviews;
             _amenities = amenities;
+            _galleryCategories = galleryCategories;
             _isFavorite = isFav;
             _loading = false;
           });
@@ -424,26 +562,26 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
   // ---------------------------------------------------------------------------
   SliverAppBar _buildSliverAppBar() {
     return SliverAppBar(
-      expandedHeight: 320,
+      expandedHeight: 450,
       pinned: true,
       stretch: true,
-      backgroundColor: AppColors.primary,
+      backgroundColor: Colors.white,
       leading: Padding(
         padding: const EdgeInsets.all(8),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.white.withOpacity(0.95),
+            color: Colors.white.withOpacity(0.95),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.black.withOpacity(0.15),
+                color: Colors.black.withOpacity(0.15),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.darkGray),
+            icon: const Icon(Icons.close, size: 22, color: Colors.black),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -453,11 +591,11 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
           padding: const EdgeInsets.all(8),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.95),
+              color: Colors.white.withOpacity(0.95),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withOpacity(0.15),
+                  color: Colors.black.withOpacity(0.15),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -466,8 +604,8 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
             child: IconButton(
               icon: Icon(
                 _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                size: 20,
-                color: _isFavorite ? AppColors.error : AppColors.darkGray,
+                size: 24,
+                color: _isFavorite ? Colors.red : Colors.black,
               ),
               onPressed: _toggleFavorite,
             ),
@@ -477,18 +615,18 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
           padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.95),
+              color: Colors.white.withOpacity(0.95),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withOpacity(0.15),
+                  color: Colors.black.withOpacity(0.15),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: IconButton(
-              icon: const Icon(Icons.share_rounded, size: 20, color: AppColors.darkGray),
+              icon: const Icon(Icons.upload, size: 22, color: Colors.black),
               onPressed: _shareHotel,
             ),
           ),
@@ -499,29 +637,22 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Image carousel with hero animation
+            // Image carousel
             _images.isEmpty
                 ? Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.primary.withOpacity(0.3),
-                          AppColors.primary.withOpacity(0.7),
-                        ],
-                      ),
+                    decoration: const BoxDecoration(
+                      color: Colors.grey,
                     ),
                     child: const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.hotel_outlined, size: 80, color: AppColors.white),
+                          Icon(Icons.hotel_outlined, size: 80, color: Colors.white),
                           SizedBox(height: 12),
                           Text(
                             'No Images Available',
                             style: TextStyle(
-                              color: AppColors.white,
+                              color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -530,113 +661,51 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                       ),
                     ),
                   )
-                : Hero(
-                    tag: 'hotel-image-${_hotel['id']}',
-                    child: GestureDetector(
-                      onTap: () {
-                        if (_images.isNotEmpty) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => PhotoGalleryScreen(
-                                images: _images,
-                                initialIndex: _currentImageIndex,
-                                title: _hotel['name'] as String?,
-                              ),
+                : GestureDetector(
+                    onTap: () {
+                      if (_images.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PhotoGalleryScreen(
+                              images: _images,
+                              initialIndex: _currentImageIndex,
+                              title: _hotel['name'] as String?,
                             ),
-                          );
-                        }
-                      },
-                      child: PageView.builder(
-                        controller: _imagePageController,
-                        itemCount: _images.length,
-                        onPageChanged: (i) => setState(() => _currentImageIndex = i),
-                        itemBuilder: (_, i) => Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            AppCachedImage(
-                              url: _images[i],
-                              fit: BoxFit.cover,
-                            ),
-                            // Subtle overlay for better text readability
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    AppColors.black.withOpacity(0.1),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        );
+                      }
+                    },
+                    child: PageView.builder(
+                      controller: _imagePageController,
+                      itemCount: _images.length,
+                      onPageChanged: (i) => setState(() => _currentImageIndex = i),
+                      itemBuilder: (_, i) => AppCachedImage(
+                        url: _images[i],
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),
-            // Enhanced gradient overlay
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    AppColors.black.withOpacity(0.2),
-                  ],
-                ),
-              ),
-            ),
-            // Page indicator with enhanced styling
+            // Image counter badge
             if (_images.isNotEmpty) Positioned(
-              bottom: 20,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: SmoothPageIndicator(
-                    controller: _imagePageController,
-                    count: _images.length,
-                    effect: ExpandingDotsEffect(
-                      dotHeight: 8,
-                      dotWidth: 8,
-                      expansionFactor: 3,
-                      spacing: 6,
-                      activeDotColor: AppColors.white,
-                      dotColor: AppColors.white.withOpacity(0.5),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Enhanced image counter badge
-            if (_images.isNotEmpty) Positioned(
-              bottom: 20,
+              bottom: 100,
               right: 20,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.white.withOpacity(0.3)),
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.photo_library_rounded, color: AppColors.white, size: 14),
+                    const Icon(Icons.photo_library_rounded, color: Colors.white, size: 16),
                     const SizedBox(width: 6),
                     Text(
                       '${_currentImageIndex + 1}/${_images.length}',
                       style: const TextStyle(
-                        color: AppColors.white,
-                        fontSize: 12,
+                        color: Colors.white,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -644,51 +713,121 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                 ),
               ),
             ),
-            // Tap to view gallery hint
-            if (_images.isNotEmpty) Positioned(
-              top: 100,
-              right: 20,
-              child: GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PhotoGalleryScreen(
-                      images: _images,
-                      initialIndex: _currentImageIndex,
-                    ),
+            // Categorized photo thumbnails section
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.only(bottom: 16, top: 8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
                   ),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                child: Column(
+                  children: [
+                    // Category thumbnails
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _galleryCategories.length,
+                        itemBuilder: (context, index) {
+                          final category = _galleryCategories[index];
+                          final categoryName = category['name'] as String;
+                          final categoryImages = category['images'] as List<String>;
+                          final isSelected = _selectedGalleryCategory == categoryName;
+                          
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedGalleryCategory = categoryName;
+                                // Update the main image carousel to show selected category images
+                                if (categoryImages.isNotEmpty) {
+                                  final imageUrl = categoryImages.first;
+                                  final imageIndex = _images.indexOf(imageUrl);
+                                  if (imageIndex != -1) {
+                                    _imagePageController.jumpToPage(imageIndex);
+                                  }
+                                }
+                              });
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 10),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 120,
+                                    height: 70,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isSelected ? Colors.white : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                      boxShadow: isSelected
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.white.withOpacity(0.5),
+                                                blurRadius: 8,
+                                                spreadRadius: 1,
+                                              )
+                                            ]
+                                          : null,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: categoryImages.isNotEmpty
+                                          ? AppCachedImage(
+                                              url: categoryImages.first,
+                                              fit: BoxFit.cover,
+                                              width: 120,
+                                              height: 70,
+                                            )
+                                          : Container(
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                Icons.image,
+                                                color: Colors.grey,
+                                                size: 30,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? Colors.white : Colors.black.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      categoryName,
+                                      style: TextStyle(
+                                        color: isSelected ? Colors.black : Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.touch_app_rounded, size: 14, color: AppColors.primary),
-                      SizedBox(width: 4),
-                      Text(
-                        'Tap to view gallery',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ).animate().fadeIn(duration: 800.ms, delay: 1000.ms).slideX(begin: 0.3),
+            ),
           ],
         ),
       ),
@@ -696,7 +835,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
   }
 
   // ---------------------------------------------------------------------------
-  // Hotel info section
+  // Hotel info section - OYO style
   // ---------------------------------------------------------------------------
   SliverToBoxAdapter _buildHotelInfoSliver() {
     final rating = (_hotel['rating'] as num?)?.toDouble() ?? _averageRating;
@@ -705,93 +844,46 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
     return SliverToBoxAdapter(
       child: Container(
         decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Name + rating badge row with enhanced styling
+            // Name + rating row
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _hotel['name'] ?? 'Hotel',
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.darkGray,
-                          height: 1.1,
-                          letterSpacing: -0.5,
-                        ),
-                      ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.1),
-                      const SizedBox(height: 8),
-                      // Enhanced location with better icon
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 16),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _hotel['location'] ?? '',
-                              style: const TextStyle(
-                                color: AppColors.gray,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ).animate().fadeIn(duration: 500.ms, delay: 100.ms),
-                    ],
+                  child: Text(
+                    _hotel['name'] ?? 'Hotel',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1F2937),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Enhanced rating badge
+                const SizedBox(width: 12),
+                // Rating badge - OYO style
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.gold.withOpacity(0.15),
-                        AppColors.gold.withOpacity(0.25),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.gold.withOpacity(0.4)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.gold.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: const Color(0xFFFFF7E6),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Column(
                     children: [
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, color: AppColors.gold, size: 18),
+                          const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 16),
                           const SizedBox(width: 4),
                           Text(
                             rating.toStringAsFixed(1),
                             style: const TextStyle(
-                              color: AppColors.darkGray,
+                              color: Color(0xFF1F2937),
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
                             ),
@@ -802,98 +894,171 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                       Text(
                         rating >= 4.5 ? 'Excellent' : rating >= 4.0 ? 'Very Good' : rating >= 3.5 ? 'Good' : 'Average',
                         style: const TextStyle(
-                          color: AppColors.gray,
+                          color: Color(0xFF6B7280),
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                ).animate().fadeIn(duration: 500.ms, delay: 150.ms).scale(begin: const Offset(0.8, 0.8)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Location
+            Row(
+              children: [
+                const Icon(Icons.location_on_rounded, color: Color(0xFF6B7280), size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _hotel['location'] ?? '',
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            // Enhanced review count with tap gesture
+            // Reviews link
             GestureDetector(
               onTap: _viewAllReviews,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.info.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.reviews_rounded, size: 14, color: AppColors.info),
-                    const SizedBox(width: 6),
+                    const Icon(Icons.star_rate_rounded, size: 14, color: Color(0xFF3B82F6)),
+                    const SizedBox(width: 4),
                     Text(
                       '$reviewCount reviews',
                       style: const TextStyle(
-                        color: AppColors.info,
+                        color: Color(0xFF3B82F6),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.info),
+                    const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Color(0xFF3B82F6)),
                   ],
                 ),
               ),
-            ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
-            const SizedBox(height: 12),
-            // ── HotelSewa Trust Badge ─────────────────────────────────
-            _buildTrustBadge(),
-            const SizedBox(height: 20),
-            // Enhanced Check-in / Check-out card
+            ),
+            const SizedBox(height: 16),
+            // Trust badge - OYO style
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.infoLight,
-                    AppColors.infoLight.withOpacity(0.7),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.info.withOpacity(0.2)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.info.withOpacity(0.1),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 20),
                   ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'HotelSewa Verified',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Secure booking · Instant confirmation · Best price',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.shield_rounded, color: Color(0xFF10B981), size: 18),
                 ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            // Check-in/out - OYO style
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
               ),
               child: Row(
                 children: [
                   Expanded(
-                    child: _buildCheckTime(
-                      icon: Icons.login_rounded,
-                      label: 'Check-in',
-                      time: _hotel['check_in'] ?? '2:00 PM',
+                    child: Column(
+                      children: [
+                        const Icon(Icons.keyboard_tab_rounded, color: Color(0xFF3B82F6), size: 22),
+                        const SizedBox(height: 6),
+                        const Text('Check-in', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                        const SizedBox(height: 4),
+                        Text(
+                          _hotel['check_in'] ?? '2:00 PM',
+                          style: const TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   Container(
-                    width: 2,
-                    height: 40,
+                    width: 1.5,
+                    height: 45,
                     decoration: BoxDecoration(
-                      color: AppColors.info.withOpacity(0.3),
+                      color: const Color(0xFF93C5FD),
                       borderRadius: BorderRadius.circular(1),
                     ),
                   ),
                   Expanded(
-                    child: _buildCheckTime(
-                      icon: Icons.logout_rounded,
-                      label: 'Check-out',
-                      time: _hotel['check_out'] ?? '11:00 AM',
+                    child: Column(
+                      children: [
+                        const Icon(Icons.keyboard_backspace_rounded, color: Color(0xFF3B82F6), size: 22),
+                        const SizedBox(height: 6),
+                        const Text('Check-out', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                        const SizedBox(height: 4),
+                        Text(
+                          _hotel['check_out'] ?? '11:00 AM',
+                          style: const TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ).animate().fadeIn(duration: 500.ms, delay: 250.ms).slideY(begin: 0.1),
-            const SizedBox(height: 20),
-            // Enhanced View All Photos button
+            ),
+            const SizedBox(height: 18),
+            // View All Photos button - OYO style
             if (_images.isNotEmpty)
               GestureDetector(
                 onTap: () {
@@ -909,23 +1074,11 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary.withOpacity(0.08),
-                        AppColors.primary.withOpacity(0.12),
-                      ],
-                    ),
+                    color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    border: Border.all(color: const Color(0xFFFECACA)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -933,55 +1086,55 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: const Color(0xFFDC2626).withOpacity(0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.photo_library_rounded, color: AppColors.primary, size: 20),
+                        child: const Icon(Icons.photo_album_rounded, color: Color(0xFFDC2626), size: 22),
                       ),
                       const SizedBox(width: 12),
                       Text(
                         'View All ${_images.length} Photos',
                         style: const TextStyle(
-                          color: AppColors.primary,
+                          color: Color(0xFFDC2626),
                           fontWeight: FontWeight.w800,
                           fontSize: 15,
-                          letterSpacing: 0.2,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.primary, size: 14),
+                      const Icon(Icons.chevron_right_rounded, color: Color(0xFFDC2626), size: 20),
                     ],
                   ),
                 ),
-              ).animate().fadeIn(duration: 500.ms, delay: 300.ms).scale(begin: const Offset(0.95, 0.95)),
-            const SizedBox(height: 20),
-            // Enhanced Description
+              ),
+            const SizedBox(height: 16),
+            // Description
             _buildDescription(),
             const SizedBox(height: 16),
-            // Enhanced live chat button
+            // Chat section - OYO style
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(6),
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFF10B981).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: AppColors.success),
+                    child: const Icon(Icons.chat_bubble_outline_rounded, size: 18, color: Color(0xFF10B981)),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
                       'Need help? Chat with hotel staff',
                       style: TextStyle(
-                        color: AppColors.success,
+                        color: Color(0xFF10B981),
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -990,24 +1143,24 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                   GestureDetector(
                     onTap: _openLiveChat,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
-                        color: AppColors.success,
-                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFF10B981),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Text(
                         'Chat Now',
                         style: TextStyle(
-                          color: AppColors.white,
+                          color: Colors.white,
                           fontWeight: FontWeight.w700,
-                          fontSize: 12,
+                          fontSize: 13,
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-            ).animate().fadeIn(duration: 500.ms, delay: 350.ms),
+            ),
             const SizedBox(height: 12),
           ],
         ),
@@ -1088,7 +1241,7 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
   }
 
   // ---------------------------------------------------------------------------
-  // Tab bar
+  // Tab bar - OYO style
   // ---------------------------------------------------------------------------
   SliverPersistentHeader _buildTabBarSliver() {
     return SliverPersistentHeader(
@@ -1096,12 +1249,13 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
       delegate: _TabBarDelegate(
         TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.gray,
-          indicatorColor: AppColors.primary,
+          labelColor: const Color(0xFFDC2626),
+          unselectedLabelColor: const Color(0xFF6B7280),
+          indicatorColor: const Color(0xFFDC2626),
           indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+          indicatorPadding: const EdgeInsets.symmetric(horizontal: 20),
+          labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           tabs: const [
             Tab(text: 'Rooms'),
             Tab(text: 'Amenities'),
@@ -1871,104 +2025,82 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
 
     // Check if any room supports hourly
     final hourlyRoom = _rooms.where((r) => r['hourly_available'] == true && r['hourly_price'] != null).firstOrNull;
-    final hourlyPrice = hourlyRoom != null ? (hourlyRoom['hourly_price'] as num?)?.toInt() : null;
 
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: Container(
-        padding: EdgeInsets.fromLTRB(16, 14, 16, MediaQuery.of(context).padding.bottom + 14),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
         decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.darkGray.withOpacity(0.15),
-              blurRadius: 32,
-              offset: const Offset(0, -8),
-            ),
-            BoxShadow(
-              color: AppColors.darkGray.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Price info — fixed width so it never crowds the buttons
-            SizedBox(
-              width: 130,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Starting from',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.gray,
-                      fontWeight: FontWeight.w500,
-                    ),
+            // Price info
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Starting from',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: 2),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          'NPR $startingPrice',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const Text(
-                          ' /night',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.gray,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (hourlyPrice != null)
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
                     Text(
-                      'NPR $hourlyPrice/hr',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.info[600],
-                        fontWeight: FontWeight.w600,
+                      'NPR $startingPrice',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFDC2626),
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                ],
-              ),
+                    const Text(
+                      ' /night',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            // Book Night button
+            const SizedBox(width: 16),
+            // Book Night button - OYO style
             Expanded(
               child: GestureDetector(
                 onTap: _bookNow,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFDC2626), Color(0xFFEF4444)],
+                    ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
+                        color: const Color(0xFFDC2626).withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
@@ -1976,15 +2108,14 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(Icons.hotel_rounded, color: AppColors.white, size: 17),
-                      SizedBox(width: 7),
+                      Icon(Icons.bed_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 6),
                       Text(
                         'Book Night',
                         style: TextStyle(
-                          color: AppColors.white,
+                          color: Colors.white,
                           fontWeight: FontWeight.w800,
                           fontSize: 15,
-                          letterSpacing: 0.2,
                         ),
                       ),
                     ],
@@ -1992,37 +2123,6 @@ class _HotelDetailsScreenState extends State<HotelDetailsScreen>
                 ),
               ),
             ),
-            // Hourly button — only if supported
-            if (hourlyRoom != null) ...[
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () => _bookHourly(room: hourlyRoom),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.info.withOpacity(0.4), width: 1.5),
-                  ),
-                  alignment: Alignment.center,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.access_time_rounded, color: AppColors.info, size: 16),
-                      SizedBox(width: 5),
-                      Text(
-                        'Hourly',
-                        style: TextStyle(
-                          color: AppColors.info,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -2047,7 +2147,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: AppColors.white,
+      color: Colors.white,
       child: tabBar,
     );
   }

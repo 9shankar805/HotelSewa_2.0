@@ -18,38 +18,10 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const InviteEarnScreen(),
+    const InviteEarnScreen(), // Can replace with ExploreScreen later
     const MyTripsScreen(),
     const SavedScreen(),
     const ProfileScreen(),
-  ];
-
-  final List<BottomNavigationBarItem> _bottomNavItems = [
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.home_outlined),
-      activeIcon: Icon(Icons.home),
-      label: 'Home',
-    ),
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.card_giftcard_outlined),
-      activeIcon: Icon(Icons.card_giftcard),
-      label: 'Invite & Earn',
-    ),
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.business_center_outlined),
-      activeIcon: Icon(Icons.business_center),
-      label: 'Trips',
-    ),
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.favorite_outline),
-      activeIcon: Icon(Icons.favorite),
-      label: 'Saved',
-    ),
-    const BottomNavigationBarItem(
-      icon: Icon(Icons.person_outline),
-      activeIcon: Icon(Icons.person),
-      label: 'Profile',
-    ),
   ];
 
   @override
@@ -59,19 +31,86 @@ class _MainNavigationState extends State<MainNavigation> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.gray[600],
-        backgroundColor: Colors.white,
-        elevation: 8,
-        items: _bottomNavItems,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: AppColors.primary,
+            unselectedItemColor: const Color(0xFF9CA3AF),
+            backgroundColor: Colors.white,
+            elevation: 0,
+            selectedLabelStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              height: 1.5,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              height: 1.5,
+            ),
+            items: [
+              BottomNavigationBarItem(
+                icon: _buildNavIcon(Icons.home_outlined, 0),
+                activeIcon: _buildNavIcon(Icons.home, 0, isActive: true),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: _buildNavIcon(Icons.person_add_alt_outlined, 1),
+                activeIcon: _buildNavIcon(Icons.person_add_alt, 1, isActive: true),
+                label: 'Invite & Earn',
+              ),
+              BottomNavigationBarItem(
+                icon: _buildNavIcon(Icons.work_outline, 2),
+                activeIcon: _buildNavIcon(Icons.work, 2, isActive: true),
+                label: 'Bookings',
+              ),
+              BottomNavigationBarItem(
+                icon: _buildNavIcon(Icons.favorite_border, 3),
+                activeIcon: _buildNavIcon(Icons.favorite, 3, isActive: true),
+                label: 'Saved',
+              ),
+              BottomNavigationBarItem(
+                icon: _buildNavIcon(Icons.person_outline, 4),
+                activeIcon: _buildNavIcon(Icons.person, 4, isActive: true),
+                label: 'Profile',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavIcon(IconData icon, int index, {bool isActive = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      decoration: BoxDecoration(
+        color: isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        icon,
+        size: 26,
+        color: isActive ? AppColors.primary : const Color(0xFF9CA3AF),
       ),
     );
   }

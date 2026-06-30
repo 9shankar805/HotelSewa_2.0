@@ -104,15 +104,23 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/appicon.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/appicon.png"
+  adaptive_icon_foreground: "assets/adaptive-icon.png"
   remove_alpha_ios: true
+  web:
+    generate: false
 
 flutter_native_splash:
   color: "#FFFFFF"
-  image: assets/appicon.png
+  image: assets/splash.png
   android: true
   ios: true
   fullscreen: true
+  image_dark: assets/splash.png
+  color_dark: "#000000"
+  android_gravity: fill
+  ios_content_mode: scaleAspectFill
   android_12:
-    image: assets/appicon.png
+    image: assets/splash.png
     color: "#FFFFFF"
+    image_dark: assets/splash.png
+    color_dark: "#000000"
